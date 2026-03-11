@@ -1,107 +1,167 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>聯群物流出車登記</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f7fb;
-      color: #222;
-    }
-    .wrap {
-      max-width: 420px;
-      margin: 0 auto;
-      padding: 24px 16px 40px;
-    }
-    .card {
-      background: #fff;
-      border-radius: 18px;
-      padding: 24px 18px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    }
-    h1 {
-      margin: 0 0 20px;
-      font-size: 24px;
-      text-align: center;
-    }
-    .label {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 6px;
-    }
-    .value {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 18px;
-    }
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 14px;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      font-size: 16px;
-      margin-bottom: 14px;
-    }
-    button {
-      width: 100%;
-      padding: 14px;
-      border: 0;
-      border-radius: 12px;
-      background: #06c755;
-      color: white;
-      font-size: 17px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    button:disabled {
-      background: #9ccfaf;
-      cursor: not-allowed;
-    }
-    .msg {
-      margin-top: 14px;
-      font-size: 14px;
-      text-align: center;
-      color: #444;
-      min-height: 20px;
-    }
-    .hidden {
-      display: none;
-    }
-  </style>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>聯群物流出車登記</title>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+<style>
+
+body{
+margin:0;
+padding:0;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+background:#f5f7fb;
+color:#222;
+}
+
+.wrap{
+max-width:420px;
+margin:0 auto;
+padding:24px 16px 40px;
+}
+
+.card{
+background:#fff;
+border-radius:18px;
+padding:24px 18px;
+box-shadow:0 8px 24px rgba(0,0,0,0.08);
+}
+
+h1{
+margin:0 0 20px;
+font-size:24px;
+text-align:center;
+}
+
+.label{
+font-size:13px;
+color:#666;
+margin-bottom:6px;
+}
+
+.value{
+font-size:22px;
+font-weight:700;
+margin-bottom:18px;
+}
+
+input,select{
+width:100%;
+box-sizing:border-box;
+padding:14px;
+border:1px solid #ddd;
+border-radius:12px;
+font-size:16px;
+margin-bottom:14px;
+}
+
+button{
+width:100%;
+padding:14px;
+border:0;
+border-radius:12px;
+background:#06c755;
+color:white;
+font-size:17px;
+font-weight:700;
+cursor:pointer;
+}
+
+button:disabled{
+background:#9ccfaf;
+cursor:not-allowed;
+}
+
+.msg{
+margin-top:14px;
+font-size:14px;
+text-align:center;
+color:#444;
+min-height:20px;
+}
+
+.hidden{
+display:none;
+}
+
+</style>
+
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>🚚 聯群物流出車登記</h1>
 
-      <div class="label">車號</div>
-      <div class="value" id="carText">讀取中...</div>
+<div class="wrap">
 
-      <div id="driverArea" class="hidden">
-        <div class="label">司機</div>
-        <div class="value" id="driverNameText"></div>
-      </div>
+<div class="card">
 
-      <div id="bindArea" class="hidden">
-        <div class="label">第一次使用請輸入姓名</div>
-        <input id="nameInput" type="text" placeholder="請輸入姓名" />
-        <button id="bindBtn">綁定姓名</button>
-      </div>
+<h1>🚚 聯群物流出車登記</h1>
 
-      <div id="tripArea" class="hidden">
-        <button id="tripBtn">確認出車</button>
-      </div>
+<div class="label">車號</div>
 
-      <div class="msg" id="msg"></div>
-    </div>
-  </div>
+<div class="value" id="carText">讀取中...</div>
 
-  <script src="./app.js"></script>
+
+<div id="driverArea" class="hidden">
+
+<div class="label">司機</div>
+
+<div class="value" id="driverNameText"></div>
+
+</div>
+
+
+<div id="bindArea" class="hidden">
+
+<div class="label">第一次使用請輸入姓名</div>
+
+<input id="nameInput" type="text" placeholder="請輸入姓名">
+
+<button id="bindBtn">綁定姓名</button>
+
+</div>
+
+
+<div id="tripArea" class="hidden">
+
+<div class="label">任務路線</div>
+
+<select id="routeSelect">
+
+<option value="">載入中...</option>
+
+</select>
+
+
+<div id="noteArea" class="hidden">
+
+<div class="label">備註</div>
+
+<input id="noteInput" type="text" placeholder="專車請輸入說明">
+
+</div>
+
+
+<button id="tripBtn">確認出車</button>
+
+</div>
+
+
+<div class="msg" id="msg"></div>
+
+</div>
+
+</div>
+
+<script src="./app.js"></script>
+
 </body>
+
 </html>
+
