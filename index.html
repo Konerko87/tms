@@ -1,232 +1,141 @@
-const LIFF_ID='2008915809-vp9PFMVX'
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聯群物流出車</title>
 
-const GAS_API_URL='https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec'
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-let currentCar=''
-let currentLineId=''
-let currentDriverName=''
-let routesData=[]
+<style>
 
-const carText=document.getElementById('carText')
-const driverArea=document.getElementById('driverArea')
-const driverNameText=document.getElementById('driverNameText')
-
-const bindArea=document.getElementById('bindArea')
-const nameInput=document.getElementById('nameInput')
-const bindBtn=document.getElementById('bindBtn')
-
-const tripArea=document.getElementById('tripArea')
-
-const taskTypeSelect=document.getElementById('taskTypeSelect')
-const routeSelect=document.getElementById('routeSelect')
-
-const routeBlock=document.getElementById('routeBlock')
-const noteArea=document.getElementById('noteArea')
-const noteInput=document.getElementById('noteInput')
-
-const tripBtn=document.getElementById('tripBtn')
-const msg=document.getElementById('msg')
-
-function setMsg(t){msg.textContent=t||''}
-
-function getCar(){
-
-const url=new URL(window.location.href)
-
-let car=url.searchParams.get("car")
-
-if(car)localStorage.setItem("car",car)
-
-if(!car)car=localStorage.getItem("car")
-
-return car||""
-
+body{
+margin:0;
+padding:0;
+font-family:-apple-system;
+background:#f5f7fb;
 }
 
-async function api(action,payload={})
-
-{
-
-const res=await fetch(GAS_API_URL,{
-
-method:'POST',
-
-headers:{'Content-Type':'text/plain'},
-
-body:JSON.stringify({action,...payload})
-
-})
-
-return await res.json()
-
+.wrap{
+max-width:420px;
+margin:auto;
+padding:20px;
 }
 
-async function loadRoutes(){
-
-const result=await api('getRoutes')
-
-if(!result.ok)return
-
-routesData=result.routes
-
+.card{
+background:white;
+border-radius:16px;
+padding:20px;
+box-shadow:0 8px 20px rgba(0,0,0,0.08);
 }
 
-taskTypeSelect.addEventListener('change',()=>{
-
-const type=taskTypeSelect.value
-
-routeSelect.innerHTML=''
-
-if(type==="專車"){
-
-routeBlock.classList.add('hidden')
-noteArea.classList.remove('hidden')
-return
-
+.label{
+font-size:13px;
+color:#666;
+margin-top:10px;
 }
 
-noteArea.classList.add('hidden')
-routeBlock.classList.remove('hidden')
-
-const list=routesData.filter(r=>r.type===type)
-
-list.forEach(r=>{
-
-const opt=document.createElement("option")
-
-opt.value=r.name
-opt.textContent=r.name
-
-routeSelect.appendChild(opt)
-
-})
-
-})
-
-async function init(){
-
-currentCar=getCar()
-
-if(!currentCar){
-
-carText.textContent='沒有取得車號'
-return
-
+.value{
+font-size:22px;
+font-weight:bold;
+margin-bottom:15px;
 }
 
-carText.textContent=currentCar
-
-await liff.init({liffId:LIFF_ID})
-
-if(!liff.isLoggedIn()){
-
-liff.login({redirectUri:window.location.href})
-return
-
+input,select{
+width:100%;
+padding:12px;
+border-radius:10px;
+border:1px solid #ddd;
+margin-bottom:12px;
 }
 
-const profile=await liff.getProfile()
-
-currentLineId=profile.userId
-
-const result=await api('getDriver',{lineId:currentLineId})
-
-if(result.found){
-
-currentDriverName=result.driverName
-
-driverNameText.textContent=currentDriverName
-
-driverArea.classList.remove('hidden')
-tripArea.classList.remove('hidden')
-
-await loadRoutes()
-
+button{
+width:100%;
+padding:14px;
+border-radius:10px;
+border:none;
+background:#06c755;
+color:white;
+font-size:16px;
+font-weight:bold;
 }
 
-else{
-
-bindArea.classList.remove('hidden')
-
+.hidden{
+display:none;
 }
 
+.msg{
+margin-top:10px;
+text-align:center;
 }
 
-bindBtn.addEventListener('click',async()=>{
+</style>
+</head>
 
-const name=nameInput.value.trim()
+<body>
 
-if(!name)return
+<div class="wrap">
 
-await api('bindDriver',{lineId:currentLineId,name})
+<div class="card">
 
-currentDriverName=name
+<h2>🚚 出車登記</h2>
 
-driverNameText.textContent=name
+<div class="label">車號</div>
+<div class="value" id="carText">讀取中...</div>
 
-bindArea.classList.add('hidden')
-driverArea.classList.remove('hidden')
-tripArea.classList.remove('hidden')
+<div id="driverArea" class="hidden">
 
-await loadRoutes()
+<div class="label">司機</div>
+<div class="value" id="driverNameText"></div>
 
-})
+</div>
 
-tripBtn.addEventListener('click',async()=>{
+<div id="bindArea" class="hidden">
 
-if(tripBtn.disabled)return
+<input id="nameInput" placeholder="輸入姓名">
+<button id="bindBtn">綁定姓名</button>
 
-const type=taskTypeSelect.value
-const route=routeSelect.value
-const note=noteInput.value
+</div>
 
-if(!type){
+<div id="tripArea" class="hidden">
 
-setMsg("請選任務")
-return
+<div class="label">任務類型</div>
 
-}
+<select id="taskTypeSelect">
 
-if(type!=="專車"&&!route){
+<option value="">請選擇</option>
+<option value="常溫">常溫</option>
+<option value="低溫">低溫</option>
+<option value="爆量專車">爆量專車</option>
+<option value="專車">專車</option>
 
-setMsg("請選路線")
-return
+</select>
 
-}
+<div id="routeBlock" class="hidden">
 
-if(type==="專車"&&!note){
+<div class="label">路線</div>
+<select id="routeSelect"></select>
 
-setMsg("請填備註")
-return
+</div>
 
-}
+<div id="noteArea" class="hidden">
 
-tripBtn.disabled=true
+<div class="label">備註</div>
+<input id="noteInput">
 
-const result=await api('logTrip',{
+</div>
 
-lineId:currentLineId,
-name:currentDriverName,
-car:currentCar,
-type:type,
-route:route,
-note:note
+<button id="tripBtn">確認出車</button>
 
-})
+</div>
 
-if(result.ok){
+<div class="msg" id="msg"></div>
 
-setMsg("出車成功")
-tripBtn.innerText="已出車"
+</div>
 
-}else{
+</div>
 
-setMsg(result.message)
-tripBtn.disabled=false
+<script src="app.js"></script>
 
-}
-
-})
-
-init()
-
+</body>
+</html>
