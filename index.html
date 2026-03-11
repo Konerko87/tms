@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>聯群物流出車</title>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -12,8 +15,9 @@
 body{
 margin:0;
 padding:0;
-font-family:-apple-system;
-background:#f5f7fb;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+background:#f4f6fa;
+color:#222;
 }
 
 .wrap{
@@ -24,40 +28,114 @@ padding:20px;
 
 .card{
 background:white;
-border-radius:16px;
-padding:20px;
-box-shadow:0 8px 20px rgba(0,0,0,0.08);
+border-radius:18px;
+padding:22px;
+box-shadow:0 10px 24px rgba(0,0,0,0.08);
 }
+
+/* 標題 */
+
+h2{
+margin:0 0 16px 0;
+text-align:center;
+font-size:22px;
+}
+
+/* 車號 */
+
+.car{
+font-size:28px;
+font-weight:bold;
+text-align:center;
+color:#1f3c88;
+margin-bottom:6px;
+}
+
+/* 司機 */
+
+.driver{
+text-align:center;
+font-size:16px;
+color:#555;
+margin-bottom:18px;
+}
+
+/* 任務按鈕區 */
+
+.task-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+margin-bottom:18px;
+}
+
+.task-btn{
+
+padding:18px;
+border-radius:12px;
+border:none;
+font-size:18px;
+font-weight:bold;
+color:white;
+cursor:pointer;
+
+}
+
+/* 常溫 */
+
+.normal{
+background:#333;
+}
+
+/* 低溫 */
+
+.cold{
+background:#2196f3;
+}
+
+/* 爆量 */
+
+.heavy{
+background:#e53935;
+}
+
+/* 專車 */
+
+.special{
+background:#fb8c00;
+}
+
+/* 路線 */
 
 .label{
-font-size:13px;
-color:#666;
-margin-top:10px;
+font-size:14px;
+margin-bottom:6px;
 }
 
-.value{
-font-size:22px;
-font-weight:bold;
-margin-bottom:15px;
-}
+select,input{
 
-input,select{
 width:100%;
-padding:12px;
+font-size:20px;
+padding:16px;
 border-radius:10px;
 border:1px solid #ddd;
-margin-bottom:12px;
+margin-bottom:14px;
+
 }
 
-button{
+/* 按鈕 */
+
+button.main{
+
 width:100%;
-padding:14px;
-border-radius:10px;
+font-size:22px;
+padding:18px;
+border-radius:12px;
 border:none;
 background:#06c755;
 color:white;
-font-size:16px;
 font-weight:bold;
+
 }
 
 .hidden{
@@ -65,11 +143,14 @@ display:none;
 }
 
 .msg{
-margin-top:10px;
+margin-top:12px;
 text-align:center;
+font-size:14px;
+color:#444;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -78,54 +159,74 @@ text-align:center;
 
 <div class="card">
 
-<h2>🚚 出車登記</h2>
+<h2>🚚 聯群物流出車</h2>
 
-<div class="label">車號</div>
-<div class="value" id="carText">讀取中...</div>
-
-<div id="driverArea" class="hidden">
-
-<div class="label">司機</div>
-<div class="value" id="driverNameText"></div>
-
+<div class="car" id="carText">
+讀取中...
 </div>
+
+<div class="driver" id="driverNameText"></div>
+
 
 <div id="bindArea" class="hidden">
 
 <input id="nameInput" placeholder="輸入姓名">
-<button id="bindBtn">綁定姓名</button>
+
+<button id="bindBtn" class="main">
+綁定姓名
+</button>
 
 </div>
 
+
 <div id="tripArea" class="hidden">
 
-<div class="label">任務類型</div>
+<div class="task-grid">
 
-<select id="taskTypeSelect">
+<button class="task-btn normal" data-type="常溫">
+常溫
+</button>
 
-<option value="">請選擇</option>
-<option value="常溫">常溫</option>
-<option value="低溫">低溫</option>
-<option value="爆量專車">爆量專車</option>
-<option value="專車">專車</option>
+<button class="task-btn cold" data-type="低溫">
+低溫
+</button>
 
-</select>
+<button class="task-btn heavy" data-type="爆量專車">
+爆量專車
+</button>
+
+<button class="task-btn special" data-type="專車">
+專車
+</button>
+
+</div>
+
 
 <div id="routeBlock" class="hidden">
 
-<div class="label">路線</div>
+<div class="label">
+路線
+</div>
+
 <select id="routeSelect"></select>
 
 </div>
 
+
 <div id="noteArea" class="hidden">
 
-<div class="label">備註</div>
-<input id="noteInput">
+<div class="label">
+備註
+</div>
+
+<input id="noteInput" placeholder="輸入專車內容">
 
 </div>
 
-<button id="tripBtn">確認出車</button>
+
+<button id="tripBtn" class="main">
+確認出車
+</button>
 
 </div>
 
@@ -138,4 +239,6 @@ text-align:center;
 <script src="app.js"></script>
 
 </body>
+
 </html>
+
