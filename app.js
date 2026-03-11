@@ -3,304 +3,224 @@ const LIFF_ID = '2008915809-vp9PFMVX';
 const GAS_API_URL =
 'https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec';
 
-let currentCar = '';
-let currentLineId = '';
-let currentDriverName = '';
+let currentCar='';
+let currentLineId='';
+let currentDriverName='';
 
-const carText = document.getElementById('carText');
-const driverArea = document.getElementById('driverArea');
-const driverNameText = document.getElementById('driverNameText');
-const bindArea = document.getElementById('bindArea');
-const tripArea = document.getElementById('tripArea');
-const msg = document.getElementById('msg');
-const nameInput = document.getElementById('nameInput');
-const bindBtn = document.getElementById('bindBtn');
-const tripBtn = document.getElementById('tripBtn');
+let routeMap={}
 
-function setMsg(text) {
-  msg.textContent = text || '';
-}
+const carText=document.getElementById('carText')
 
-/* 取得 car 參數 */
-function getCarFromUrl() {
+const driverArea=document.getElementById('driverArea')
+const driverNameText=document.getElementById('driverNameText')
 
-  const url = new URL(window.location.href);
+const bindArea=document.getElementById('bindArea')
+const nameInput=document.getElementById('nameInput')
+const bindBtn=document.getElementById('bindBtn')
 
-  let car = url.searchParams.get('car');
+const tripArea=document.getElementById('tripArea')
 
-  if (!car) {
+const routeSelect=document.getElementById('routeSelect')
 
-    const hash = window.location.hash || '';
+const noteArea=document.getElementById('noteArea')
+const noteInput=document.getElementById('noteInput')
 
-    const hashQuery = hash.includes('?')
-      ? hash.split('?')[1]
-      : hash.replace(/^#/, '');
+const tripBtn=document.getElementById('tripBtn')
 
-    const hashParams = new URLSearchParams(hashQuery);
+const msg=document.getElementById('msg')
 
-    car = hashParams.get('car');
+function setMsg(t){msg.textContent=t||''}
 
-  }
+function getCarFromUrl(){
 
-  return (car || '').trim();
+const url=new URL(window.location.href)
 
-}
+let car=url.searchParams.get('car')
 
-/* API 呼叫 */
-async function api(action, payload = {}) {
+if(!car){
 
-  const res = await fetch(GAS_API_URL, {
+const hash=window.location.hash||''
 
-    method: 'POST',
+const hashQuery=hash.includes('?')?hash.split('?')[1]:hash.replace(/^#/,'')
+const hashParams=new URLSearchParams(hashQuery)
 
-    headers: {
-      'Content-Type': 'text/plain;charset=utf-8'
-    },
-
-    body: JSON.stringify({
-      action,
-      ...payload
-    })
-
-  });
-
-  return await res.json();
+car=hashParams.get('car')
 
 }
 
-/* 初始化 */
-async function init() {
-
-  try {
-
-    /* 取得 car */
-
-    currentCar = getCarFromUrl();
-
-    /* 如果 URL 有 car 就存 localStorage */
-
-    if (currentCar) {
-
-      localStorage.setItem("car", currentCar);
-
-    } else {
-
-      currentCar = localStorage.getItem("car") || "";
-
-    }
-
-    if (!currentCar) {
-
-      carText.textContent = '沒有取得車號';
-
-      setMsg('請確認 QR Code 是否包含 car 參數');
-
-      return;
-
-    }
-
-    carText.textContent = currentCar;
-
-    setMsg('登入 LINE 中...');
-
-    /* 初始化 LIFF */
-
-    await liff.init({
-
-      liffId: LIFF_ID
-
-    });
-
-    /* 如果沒登入就登入 */
-
-    if (!liff.isLoggedIn()) {
-
-      liff.login({
-
-        redirectUri: window.location.href
-
-      });
-
-      return;
-
-    }
-
-    /* 取得 LINE profile */
-
-    const profile = await liff.getProfile();
-
-    currentLineId = profile.userId;
-
-    setMsg('查詢司機資料中...');
-
-    const result = await api('getDriver', {
-
-      lineId: currentLineId
-
-    });
-
-    if (!result.ok) {
-
-      setMsg(result.message || '查詢失敗');
-
-      return;
-
-    }
-
-    /* 已綁定 */
-
-    if (result.found) {
-
-      currentDriverName = result.driverName || '';
-
-      driverNameText.textContent = currentDriverName;
-
-      driverArea.classList.remove('hidden');
-
-      tripArea.classList.remove('hidden');
-
-      setMsg('');
-
-    }
-
-    /* 未綁定 */
-
-    else {
-
-      bindArea.classList.remove('hidden');
-
-      setMsg('請先輸入姓名完成綁定');
-
-    }
-
-  }
-
-  catch (err) {
-
-    console.error(err);
-
-    setMsg('系統初始化失敗：' + err.message);
-
-  }
+return(car||'').trim()
 
 }
 
-/* 綁定司機 */
+async function api(action,payload={}){
 
-bindBtn.addEventListener('click', async () => {
+const res=await fetch(GAS_API_URL,{
+method:'POST',
+headers:{'Content-Type':'text/plain;charset=utf-8'},
+body:JSON.stringify({action,...payload})
+})
 
-  try {
+return await res.json()
 
-    const name = nameInput.value.trim();
+}
 
-    if (!name) {
+async function loadRoutes(){
 
-      setMsg('請輸入姓名');
+const result=await api('getRoutes')
 
-      return;
+if(!result.ok) return
 
-    }
+routeSelect.innerHTML='<option value="">請選擇路線</option>'
 
-    bindBtn.disabled = true;
+result.routes.forEach(r=>{
 
-    setMsg('綁定中...');
+const opt=document.createElement('option')
 
-    const result = await api('bindDriver', {
+opt.value=r.name
+opt.textContent=r.name
 
-      lineId: currentLineId,
+routeSelect.appendChild(opt)
 
-      name
+routeMap[r.name]=r.type
 
-    });
+})
 
-    if (!result.ok) {
+}
 
-      setMsg(result.message || '綁定失敗');
+routeSelect.addEventListener('change',()=>{
 
-      bindBtn.disabled = false;
+const type=routeMap[routeSelect.value]
 
-      return;
+if(type==="專車"){
+noteArea.classList.remove('hidden')
+}else{
+noteArea.classList.add('hidden')
+}
 
-    }
+})
 
-    currentDriverName = result.driverName || name;
+async function init(){
 
-    driverNameText.textContent = currentDriverName;
+try{
 
-    bindArea.classList.add('hidden');
+currentCar=getCarFromUrl()
 
-    driverArea.classList.remove('hidden');
+if(currentCar){
+localStorage.setItem("car",currentCar)
+}else{
+currentCar=localStorage.getItem("car")||""
+}
 
-    tripArea.classList.remove('hidden');
+if(!currentCar){
+carText.textContent='沒有取得車號'
+return
+}
 
-    setMsg('綁定成功');
+carText.textContent=currentCar
 
-  }
+await liff.init({liffId:LIFF_ID})
 
-  catch (err) {
+if(!liff.isLoggedIn()){
 
-    console.error(err);
+liff.login({redirectUri:window.location.href})
 
-    setMsg('綁定失敗：' + err.message);
+return
 
-  }
+}
 
-  finally {
+const profile=await liff.getProfile()
 
-    bindBtn.disabled = false;
+currentLineId=profile.userId
 
-  }
+const result=await api('getDriver',{lineId:currentLineId})
 
-});
+if(result.found){
 
-/* 出車 */
+currentDriverName=result.driverName
 
-tripBtn.addEventListener('click', async () => {
+driverNameText.textContent=currentDriverName
 
-  try {
+driverArea.classList.remove('hidden')
+tripArea.classList.remove('hidden')
 
-    tripBtn.disabled = true;
+await loadRoutes()
 
-    setMsg('出車登記中...');
+}else{
 
-    const result = await api('logTrip', {
+bindArea.classList.remove('hidden')
 
-      lineId: currentLineId,
+}
 
-      name: currentDriverName,
+}catch(err){
 
-      car: currentCar
+console.error(err)
 
-    });
+setMsg(err.message)
 
-    if (!result.ok) {
+}
 
-      setMsg(result.message || '登記失敗');
+}
 
-      tripBtn.disabled = false;
+bindBtn.addEventListener('click',async()=>{
 
-      return;
+const name=nameInput.value.trim()
 
-    }
+if(!name){
+setMsg("請輸入姓名")
+return
+}
 
-    setMsg('✅ 出車登記成功');
+const result=await api('bindDriver',{
+lineId:currentLineId,
+name
+})
 
-  }
+if(result.ok){
 
-  catch (err) {
+currentDriverName=name
 
-    console.error(err);
+driverNameText.textContent=name
 
-    setMsg('登記失敗：' + err.message);
+bindArea.classList.add('hidden')
 
-  }
+driverArea.classList.remove('hidden')
+tripArea.classList.remove('hidden')
 
-  finally {
+await loadRoutes()
 
-    tripBtn.disabled = false;
+}
 
-  }
+})
 
-});
+tripBtn.addEventListener('click',async()=>{
 
-init();
+const route=routeSelect.value
+const note=noteInput.value.trim()
+
+if(!route){
+setMsg("請選擇路線")
+return
+}
+
+if(routeMap[route]==="專車" && !note){
+setMsg("專車請填寫備註")
+return
+}
+
+const result=await api('logTrip',{
+lineId:currentLineId,
+name:currentDriverName,
+car:currentCar,
+route:route,
+note:note
+})
+
+if(result.ok){
+setMsg("✅ 出車成功")
+}else{
+setMsg("出車失敗")
+}
+
+})
+
+init()
