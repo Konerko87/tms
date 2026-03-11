@@ -3,224 +3,293 @@ const LIFF_ID = '2008915809-vp9PFMVX';
 const GAS_API_URL =
 'https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec';
 
-let currentCar='';
-let currentLineId='';
-let currentDriverName='';
+let currentCar = '';
+let currentLineId = '';
+let currentDriverName = '';
 
-let routeMap={}
+let routeMap = {};
 
-const carText=document.getElementById('carText')
+/* DOM */
 
-const driverArea=document.getElementById('driverArea')
-const driverNameText=document.getElementById('driverNameText')
+const carText = document.getElementById('carText');
 
-const bindArea=document.getElementById('bindArea')
-const nameInput=document.getElementById('nameInput')
-const bindBtn=document.getElementById('bindBtn')
+const driverArea = document.getElementById('driverArea');
+const driverNameText = document.getElementById('driverNameText');
 
-const tripArea=document.getElementById('tripArea')
+const bindArea = document.getElementById('bindArea');
+const nameInput = document.getElementById('nameInput');
+const bindBtn = document.getElementById('bindBtn');
 
-const routeSelect=document.getElementById('routeSelect')
+const tripArea = document.getElementById('tripArea');
 
-const noteArea=document.getElementById('noteArea')
-const noteInput=document.getElementById('noteInput')
+const routeSelect = document.getElementById('routeSelect');
 
-const tripBtn=document.getElementById('tripBtn')
+const noteArea = document.getElementById('noteArea');
+const noteInput = document.getElementById('noteInput');
 
-const msg=document.getElementById('msg')
+const tripBtn = document.getElementById('tripBtn');
 
-function setMsg(t){msg.textContent=t||''}
+const msg = document.getElementById('msg');
 
-function getCarFromUrl(){
 
-const url=new URL(window.location.href)
+function setMsg(text){
+  msg.textContent = text || '';
+}
 
-let car=url.searchParams.get('car')
 
-if(!car){
+/* 取得 car */
 
-const hash=window.location.hash||''
+function getCar(){
 
-const hashQuery=hash.includes('?')?hash.split('?')[1]:hash.replace(/^#/,'')
-const hashParams=new URLSearchParams(hashQuery)
+  const url = new URL(window.location.href);
 
-car=hashParams.get('car')
+  let car = url.searchParams.get("car");
+
+  if(!car){
+
+    const hash = window.location.hash || "";
+
+    const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+
+    car = hashParams.get("car");
+
+  }
+
+  if(car){
+
+    localStorage.setItem("car", car);
+
+  }
+
+  if(!car){
+
+    car = localStorage.getItem("car");
+
+  }
+
+  return car || "";
 
 }
 
-return(car||'').trim()
 
-}
+/* API */
 
 async function api(action,payload={}){
 
-const res=await fetch(GAS_API_URL,{
-method:'POST',
-headers:{'Content-Type':'text/plain;charset=utf-8'},
-body:JSON.stringify({action,...payload})
-})
+  const res = await fetch(GAS_API_URL,{
+    method:'POST',
+    headers:{
+      'Content-Type':'text/plain;charset=utf-8'
+    },
+    body:JSON.stringify({
+      action,
+      ...payload
+    })
+  });
 
-return await res.json()
+  return await res.json();
 
 }
+
+
+/* 載入路線 */
 
 async function loadRoutes(){
 
-const result=await api('getRoutes')
+  const result = await api('getRoutes');
 
-if(!result.ok) return
+  if(!result.ok) return;
 
-routeSelect.innerHTML='<option value="">請選擇路線</option>'
+  routeSelect.innerHTML = '<option value="">請選擇路線</option>';
 
-result.routes.forEach(r=>{
+  result.routes.forEach(r => {
 
-const opt=document.createElement('option')
+    const opt = document.createElement('option');
 
-opt.value=r.name
-opt.textContent=r.name
+    opt.value = r.name;
+    opt.textContent = r.name;
 
-routeSelect.appendChild(opt)
+    routeSelect.appendChild(opt);
 
-routeMap[r.name]=r.type
+    routeMap[r.name] = r.type;
 
-})
+  });
 
 }
+
+
+/* 路線變更 */
 
 routeSelect.addEventListener('change',()=>{
 
-const type=routeMap[routeSelect.value]
+  const type = routeMap[routeSelect.value];
 
-if(type==="專車"){
-noteArea.classList.remove('hidden')
-}else{
-noteArea.classList.add('hidden')
-}
+  if(type === "專車"){
 
-})
+    noteArea.classList.remove('hidden');
+
+  }else{
+
+    noteArea.classList.add('hidden');
+
+  }
+
+});
+
+
+/* 初始化 */
 
 async function init(){
 
-try{
+  try{
 
-currentCar=getCarFromUrl()
+    currentCar = getCar();
 
-if(currentCar){
-localStorage.setItem("car",currentCar)
-}else{
-currentCar=localStorage.getItem("car")||""
-}
+    if(!currentCar){
 
-if(!currentCar){
-carText.textContent='沒有取得車號'
-return
-}
+      carText.textContent = "沒有取得車號";
 
-carText.textContent=currentCar
+      return;
 
-await liff.init({liffId:LIFF_ID})
+    }
 
-if(!liff.isLoggedIn()){
+    carText.textContent = currentCar;
 
-liff.login({redirectUri:window.location.href})
+    await liff.init({
+      liffId: LIFF_ID
+    });
 
-return
+    if(!liff.isLoggedIn()){
 
-}
+      liff.login({
+        redirectUri: window.location.href
+      });
 
-const profile=await liff.getProfile()
+      return;
 
-currentLineId=profile.userId
+    }
 
-const result=await api('getDriver',{lineId:currentLineId})
+    const profile = await liff.getProfile();
 
-if(result.found){
+    currentLineId = profile.userId;
 
-currentDriverName=result.driverName
+    const result = await api('getDriver',{
+      lineId: currentLineId
+    });
 
-driverNameText.textContent=currentDriverName
+    if(result.found){
 
-driverArea.classList.remove('hidden')
-tripArea.classList.remove('hidden')
+      currentDriverName = result.driverName;
 
-await loadRoutes()
+      driverNameText.textContent = currentDriverName;
 
-}else{
+      driverArea.classList.remove('hidden');
+      tripArea.classList.remove('hidden');
 
-bindArea.classList.remove('hidden')
+      await loadRoutes();
 
-}
+    }
 
-}catch(err){
+    else{
 
-console.error(err)
+      bindArea.classList.remove('hidden');
 
-setMsg(err.message)
+    }
 
-}
+  }
 
-}
+  catch(err){
 
-bindBtn.addEventListener('click',async()=>{
+    console.error(err);
 
-const name=nameInput.value.trim()
+    setMsg(err.message);
 
-if(!name){
-setMsg("請輸入姓名")
-return
-}
-
-const result=await api('bindDriver',{
-lineId:currentLineId,
-name
-})
-
-if(result.ok){
-
-currentDriverName=name
-
-driverNameText.textContent=name
-
-bindArea.classList.add('hidden')
-
-driverArea.classList.remove('hidden')
-tripArea.classList.remove('hidden')
-
-await loadRoutes()
+  }
 
 }
 
-})
 
-tripBtn.addEventListener('click',async()=>{
+/* 綁定司機 */
 
-const route=routeSelect.value
-const note=noteInput.value.trim()
+bindBtn.addEventListener('click', async ()=>{
 
-if(!route){
-setMsg("請選擇路線")
-return
-}
+  const name = nameInput.value.trim();
 
-if(routeMap[route]==="專車" && !note){
-setMsg("專車請填寫備註")
-return
-}
+  if(!name){
 
-const result=await api('logTrip',{
-lineId:currentLineId,
-name:currentDriverName,
-car:currentCar,
-route:route,
-note:note
-})
+    setMsg("請輸入姓名");
 
-if(result.ok){
-setMsg("✅ 出車成功")
-}else{
-setMsg("出車失敗")
-}
+    return;
 
-})
+  }
 
-init()
+  const result = await api('bindDriver',{
+    lineId: currentLineId,
+    name
+  });
+
+  if(result.ok){
+
+    currentDriverName = name;
+
+    driverNameText.textContent = name;
+
+    bindArea.classList.add('hidden');
+
+    driverArea.classList.remove('hidden');
+    tripArea.classList.remove('hidden');
+
+    await loadRoutes();
+
+  }
+
+});
+
+
+/* 出車 */
+
+tripBtn.addEventListener('click', async ()=>{
+
+  const route = routeSelect.value;
+
+  const note = noteInput.value.trim();
+
+  if(!route){
+
+    setMsg("請選擇路線");
+
+    return;
+
+  }
+
+  if(routeMap[route] === "專車" && !note){
+
+    setMsg("專車請填寫備註");
+
+    return;
+
+  }
+
+  const result = await api('logTrip',{
+    lineId: currentLineId,
+    name: currentDriverName,
+    car: currentCar,
+    route: route,
+    note: note
+  });
+
+  if(result.ok){
+
+    setMsg("✅ 出車成功");
+
+  }else{
+
+    setMsg("出車失敗");
+
+  }
+
+});
+
+
+init();
+
