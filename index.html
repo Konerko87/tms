@@ -1,245 +1,173 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html>
 
 <head>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
 
-<title>聯群物流出車</title>
+<title>出車系統</title>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-<style>
-
-body{
-margin:0;
-padding:0;
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-background:#f4f6fa;
-color:#222;
-}
-
-.wrap{
-max-width:420px;
-margin:auto;
-padding:20px;
-}
-
-.card{
-background:white;
-border-radius:18px;
-padding:22px;
-box-shadow:0 10px 24px rgba(0,0,0,0.08);
-}
-
-/* 標題 */
-
-h2{
-margin:0 0 16px 0;
-text-align:center;
-font-size:22px;
-}
-
-/* 車號 */
-
-.car{
-font-size:28px;
-font-weight:bold;
-text-align:center;
-color:#1f3c88;
-margin-bottom:6px;
-}
-
-/* 司機 */
-
-.driver{
-text-align:center;
-font-size:16px;
-color:#555;
-margin-bottom:18px;
-}
-
-/* 任務按鈕區 */
-
-.task-grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:12px;
-margin-bottom:18px;
-}
-
-.task-btn{
-
-padding:18px;
-border-radius:12px;
-border:none;
-font-size:18px;
-font-weight:bold;
-color:white;
-cursor:pointer;
-
-}
-
-/* 常溫 */
-
-.normal{
-background:#333;
-}
-
-/* 低溫 */
-
-.cold{
-background:#2196f3;
-}
-
-/* 爆量 */
-
-.heavy{
-background:#e53935;
-}
-
-/* 專車 */
-
-.special{
-background:#fb8c00;
-}
-
-/* 路線 */
-
-.label{
-font-size:14px;
-margin-bottom:6px;
-}
-
-select,input{
-
-width:100%;
-font-size:20px;
-padding:16px;
-border-radius:10px;
-border:1px solid #ddd;
-margin-bottom:14px;
-
-}
-
-/* 按鈕 */
-
-button.main{
-
-width:100%;
-font-size:22px;
-padding:18px;
-border-radius:12px;
-border:none;
-background:#06c755;
-color:white;
-font-weight:bold;
-
-}
-
-.hidden{
-display:none;
-}
-
-.msg{
-margin-top:12px;
-text-align:center;
-font-size:14px;
-color:#444;
-}
-
-</style>
 
 </head>
 
 <body>
 
-<div class="wrap">
+<h2>🚚 出車系統</h2>
 
-<div class="card">
-
-<h2>🚚 聯群物流出車</h2>
-
-<div class="car" id="carText">
-讀取中...
+<div style="background:#fff3cd;padding:10px;border-radius:10px;margin-bottom:10px;">
+⚠ 中區以外司機請選「區域司機」
 </div>
 
-<div class="driver" id="driverNameText"></div>
+<select id="task">
 
+<option value="">請選任務</option>
 
-<div id="bindArea" class="hidden">
+<option value="常溫">常溫配送</option>
 
-<input id="nameInput" placeholder="輸入姓名">
+<option value="低溫">低溫配送</option>
 
-<button id="bindBtn" class="main">
-綁定姓名
-</button>
+<option value="爆量專車">爆量專車</option>
 
-</div>
+<option value="專車">專車</option>
 
+<option value="區域司機">區域司機</option>
 
-<div id="tripArea" class="hidden">
+</select>
 
-<div class="task-grid">
+<br><br>
 
-<button class="task-btn normal" data-type="常溫">
-常溫
-</button>
+<input id="route" placeholder="路線 / 區域">
 
-<button class="task-btn cold" data-type="低溫">
-低溫
-</button>
+<br><br>
 
-<button class="task-btn heavy" data-type="爆量專車">
-爆量專車
-</button>
+<input id="note" placeholder="備註">
 
-<button class="task-btn special" data-type="專車">
-專車
-</button>
+<br><br>
 
-</div>
+<button onclick="submitTrip()">確認出車</button>
 
+<div id="popup" style="display:none;border:1px solid #ccc;padding:20px;margin-top:20px;"></div>
 
-<div id="routeBlock" class="hidden">
+<script>
 
-<div class="label">
-路線
-</div>
+const API="你的GAS網址"
 
-<select id="routeSelect"></select>
+let lineId
+let driverName
+let car
 
-</div>
+async function init(){
 
+await liff.init({
+liffId:"你的LIFFID"
+})
 
-<div id="noteArea" class="hidden">
+const profile=await liff.getProfile()
 
-<div class="label">
-備註
-</div>
+lineId=profile.userId
 
-<input id="noteInput" placeholder="輸入專車內容">
+const url=new URL(location.href)
 
-</div>
+car=url.searchParams.get("car")
 
+}
 
-<button id="tripBtn" class="main">
-確認出車
-</button>
+async function submitTrip(){
 
-</div>
+const type=document.getElementById("task").value
 
-<div class="msg" id="msg"></div>
+const route=document.getElementById("route").value
 
-</div>
+const note=document.getElementById("note").value
 
-</div>
+const res=await fetch(
 
-<script src="app.js"></script>
+API+
+"?action=logTrip"+
+"&lineId="+lineId+
+"&name="+driverName+
+"&car="+car+
+"&type="+type+
+"&route="+route+
+"&note="+note
+
+)
+
+const data=await res.json()
+
+showVehicleStatus()
+
+}
+
+async function showVehicleStatus(){
+
+const res=await fetch(
+
+API+
+"?action=getVehicleStatus"+
+"&car="+car
+
+)
+
+const data=await res.json()
+
+document.getElementById("popup").style.display="block"
+
+document.getElementById("popup").innerHTML=`
+
+<h3>${car} 出車成功</h3>
+
+<p>保養剩餘 ${data.maintRemain} 天</p>
+
+<p>驗車期限 ${data.inspectionDate}</p>
+
+<p>剩餘 ${data.inspectionRemain} 天</p>
+
+<button onclick="finishMaintenance()">更新保養狀態</button>
+
+<button onclick="finishInspection()">更新驗車狀態</button>
+
+`
+
+}
+
+async function finishMaintenance(){
+
+if(!confirm("確認保養完成?")) return
+
+await fetch(
+
+API+
+"?action=finishMaintenance"+
+"&car="+car
+
+)
+
+alert("保養已更新")
+
+}
+
+async function finishInspection(){
+
+if(!confirm("確認驗車完成?")) return
+
+await fetch(
+
+API+
+"?action=finishInspection"+
+"&car="+car
+
+)
+
+alert("驗車已更新")
+
+}
+
+init()
+
+</script>
 
 </body>
 
 </html>
-
-
