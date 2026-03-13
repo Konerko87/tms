@@ -1,458 +1,140 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
-<title>聯群物流出車</title>
-
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-<style>
-
-body{
-font-family:Arial;
-background:#f5f5f5;
-padding:20px;
-font-size:22px;
-}
-
-.card{
-background:#fff;
-padding:20px;
-border-radius:16px;
-margin-bottom:16px;
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
-}
-
-.hidden{
-display:none;
-}
-
-button{
-
-width:100%;
-padding:18px;
-
-border:none;
-border-radius:14px;
-
-font-size:24px;
-margin-top:12px;
-
-}
-
-.primary{
-background:#2c7be5;
-color:#fff;
-}
-
-.task-btn{
-background:#eee;
-}
-
-.warning{
-
-background:#fff3cd;
-padding:14px;
-border-radius:12px;
-margin-bottom:12px;
-
-}
-
-input,select{
-
-width:100%;
-padding:14px;
-
-font-size:22px;
-
-margin-top:10px;
-
-border-radius:10px;
-border:1px solid #ccc;
-
-}
-
-</style>
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>聯群物流出車</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body{
+      font-family: Arial, sans-serif;
+      background:#f5f5f5;
+      padding:20px;
+      font-size:22px;
+      margin:0;
+    }
+    .card{
+      background:#fff;
+      padding:20px;
+      border-radius:16px;
+      margin-bottom:16px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    }
+    .hidden{ display:none; }
+    button{
+      width:100%;
+      padding:18px;
+      border:none;
+      border-radius:14px;
+      font-size:24px;
+      margin-top:12px;
+      cursor:pointer;
+    }
+    .primary{
+      background:#2c7be5;
+      color:#fff;
+    }
+    .task-btn{
+      background:#eee;
+    }
+    .warning{
+      background:#fff3cd;
+      padding:14px;
+      border-radius:12px;
+      margin-bottom:12px;
+      line-height:1.5;
+    }
+    input,select{
+      width:100%;
+      padding:14px;
+      font-size:22px;
+      margin-top:10px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      box-sizing:border-box;
+    }
+    #msg{
+      color:#c62828;
+      font-weight:bold;
+      min-height:28px;
+    }
+    .selected-task{
+      outline:3px solid #2c7be5;
+      background:#dbeafe;
+    }
+    .sub-btn{
+      background:#f3f4f6;
+      color:#111;
+      border:1px solid #d1d5db;
+      font-size:20px;
+    }
+    .status-box{
+      background:#f8fafc;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:14px;
+      margin-top:12px;
+      line-height:1.7;
+      white-space:pre-line;
+    }
+  </style>
 </head>
-
-
 <body>
 
-
-<div class="card">
-
-🚚 聯群物流出車系統
-
-<br><br>
-
-車號：
-<b id="carText"></b>
-
-<br><br>
-
-司機：
-<b id="driverNameText"></b>
-
-</div>
-
-
-<div id="bindArea" class="card hidden">
-
-綁定司機
-
-<input id="nameInput" placeholder="輸入姓名">
-
-<button id="bindBtn" class="primary">綁定</button>
-
-</div>
-
-
-<div id="tripArea" class="card hidden">
-
-<div class="warning">
-
-中區以外司機請選「區域司機」
-
-</div>
-
-
-<button class="task-btn" data-type="常溫">常溫配送</button>
-
-<button class="task-btn" data-type="低溫">低溫配送</button>
-
-<button class="task-btn" data-type="爆量專車">爆量專車</button>
-
-<button class="task-btn" data-type="專車">專車</button>
-
-<button class="task-btn" data-type="區域司機">區域司機</button>
-
-
-<div id="routeBlock" class="hidden">
-
-路線
-
-<select id="routeSelect"></select>
-
-</div>
-
-
-<div id="noteArea" class="hidden">
-
-備註 / 區域
-
-<input id="noteInput">
-
-</div>
-
-
-<button id="tripBtn" class="primary">
-
-確認出車
-
-</button>
-
-
-<p id="msg"></p>
-
-</div>
-
-
-<script>
-
-const LIFF_ID='2008915809-vp9PFMVX'
-
-const GAS_API_URL='https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec'
-
-
-let currentCar=''
-let currentLineId=''
-let currentDriverName=''
-let selectedType=''
-
-let routesData=[]
-
-
-const carText=document.getElementById('carText')
-const driverNameText=document.getElementById('driverNameText')
-
-const bindArea=document.getElementById('bindArea')
-const nameInput=document.getElementById('nameInput')
-const bindBtn=document.getElementById('bindBtn')
-
-const tripArea=document.getElementById('tripArea')
-
-const routeBlock=document.getElementById('routeBlock')
-const routeSelect=document.getElementById('routeSelect')
-
-const noteArea=document.getElementById('noteArea')
-const noteInput=document.getElementById('noteInput')
-
-const tripBtn=document.getElementById('tripBtn')
-
-const msg=document.getElementById('msg')
-
-
-function setMsg(t){
-msg.textContent=t||''
-}
-
-
-function getCar(){
-
-const url=new URL(window.location.href)
-
-let car=url.searchParams.get("car")
-
-if(car)localStorage.setItem("car",car)
-
-if(!car)car=localStorage.getItem("car")
-
-return car||''
-
-}
-
-
-async function api(action,payload={}){
-
-const params=new URLSearchParams({
-action,
-...payload
-})
-
-const res=await fetch(`${GAS_API_URL}?${params}`)
-
-return await res.json()
-
-}
-
-
-async function loadRoutes(){
-
-const result=await api('getRoutes')
-
-if(!result.ok)return
-
-routesData=result.routes
-
-}
-
-
-document.querySelectorAll('.task-btn').forEach(btn=>{
-
-btn.onclick=()=>{
-
-selectedType=btn.dataset.type
-
-routeSelect.innerHTML=''
-
-
-if(selectedType==="專車"){
-
-routeBlock.classList.add('hidden')
-noteArea.classList.remove('hidden')
-
-return
-
-}
-
-
-if(selectedType==="區域司機"){
-
-routeBlock.classList.add('hidden')
-noteArea.classList.remove('hidden')
-
-noteInput.placeholder="輸入區域 (例如 台中)"
-
-return
-
-}
-
-
-noteArea.classList.add('hidden')
-routeBlock.classList.remove('hidden')
-
-const list=routesData.filter(r=>r.type===selectedType)
-
-list.forEach(r=>{
-
-const opt=document.createElement("option")
-
-opt.value=r.name
-opt.textContent=r.name
-
-routeSelect.appendChild(opt)
-
-})
-
-}
-
-})
-
-
-async function init(){
-
-currentCar=getCar()
-
-if(!currentCar){
-
-carText.textContent='沒有取得車號'
-return
-
-}
-
-carText.textContent=currentCar
-
-
-await liff.init({liffId:LIFF_ID})
-
-
-if(!liff.isLoggedIn()){
-
-liff.login({redirectUri:window.location.href})
-return
-
-}
-
-
-const profile=await liff.getProfile()
-
-currentLineId=profile.userId
-
-
-const result=await api('getDriver',{lineId:currentLineId})
-
-
-if(result.found){
-
-currentDriverName=result.name
-
-driverNameText.textContent=currentDriverName
-
-tripArea.classList.remove('hidden')
-
-await loadRoutes()
-
-}else{
-
-bindArea.classList.remove('hidden')
-
-}
-
-}
-
-
-bindBtn.onclick=async()=>{
-
-const name=nameInput.value.trim()
-
-if(!name)return
-
-await api('bindDriver',{lineId:currentLineId,name})
-
-currentDriverName=name
-
-driverNameText.textContent=name
-
-bindArea.classList.add('hidden')
-
-tripArea.classList.remove('hidden')
-
-await loadRoutes()
-
-}
-
-
-tripBtn.onclick=async()=>{
-
-const route=routeSelect.value
-const note=noteInput.value
-
-
-if(!selectedType){
-
-setMsg("請選任務")
-return
-
-}
-
-
-if(selectedType==="區域司機" && !note){
-
-setMsg("請輸入區域")
-return
-
-}
-
-
-if(selectedType!=="專車" && selectedType!=="區域司機" && !route){
-
-setMsg("請選路線")
-return
-
-}
-
-
-tripBtn.disabled=true
-
-
-const result=await api('logTrip',{
-
-lineId:currentLineId,
-name:currentDriverName,
-car:currentCar,
-type:selectedType,
-route:selectedType==="區域司機"?note:route,
-note:selectedType==="區域司機"?'':note
-
-})
-
-
-if(result.ok){
-
-setMsg("出車成功")
-
-showVehicleStatus()
-
-}else{
-
-setMsg("出車失敗")
-
-tripBtn.disabled=false
-
-}
-
-}
-
-
-async function showVehicleStatus(){
-
-const data=await api('getVehicleStatus',{car:currentCar})
-
-if(!data.ok)return
-
-alert(
-
-`🚚 ${currentCar} 出車成功
-
-保養剩餘 ${data.maintRemain} 天
-下次保養 ${data.maintainDue}
-
-驗車期限 ${data.inspectionDate}
-剩餘 ${data.inspectionRemain} 天`
-
-)
-
-}
-
-
-init()
-
-</script>
-
+  <div class="card">
+    <div style="font-size:28px;font-weight:bold;">🚚 聯群物流出車系統</div>
+    <br>
+    車號：<b id="carText"></b>
+    <br><br>
+    司機：<b id="driverNameText"></b>
+  </div>
+
+  <div id="bindArea" class="card hidden">
+    <div style="font-size:26px;font-weight:bold;">綁定司機</div>
+    <input id="nameInput" placeholder="請輸入姓名">
+    <button id="bindBtn" class="primary">綁定</button>
+  </div>
+
+  <div id="tripArea" class="card hidden">
+    <div class="warning">
+      ⚠ 中區以外司機請選「區域司機」
+    </div>
+
+    <div style="font-size:26px;font-weight:bold;margin-bottom:8px;">選擇任務</div>
+
+    <button class="task-btn" data-type="常溫">常溫配送</button>
+    <button class="task-btn" data-type="低溫">低溫配送</button>
+    <button class="task-btn" data-type="爆量專車">爆量專車</button>
+    <button class="task-btn" data-type="專車">專車</button>
+    <button class="task-btn" data-type="區域司機">區域司機</button>
+
+    <div id="routeBlock" class="hidden" style="margin-top:14px;">
+      路線
+      <select id="routeSelect"></select>
+    </div>
+
+    <div id="areaBlock" class="hidden" style="margin-top:14px;">
+      區域
+      <select id="areaSelect"></select>
+    </div>
+
+    <div id="noteArea" class="hidden" style="margin-top:14px;">
+      備註
+      <input id="noteInput" placeholder="例如：楊梅專車">
+    </div>
+
+    <button id="tripBtn" class="primary">確認出車</button>
+    <p id="msg"></p>
+  </div>
+
+  <div id="vehicleStatusCard" class="card hidden">
+    <div style="font-size:26px;font-weight:bold;">車輛提醒</div>
+    <div id="vehicleStatusBox" class="status-box"></div>
+
+    <button id="maintBtn" class="sub-btn">保養已完成</button>
+    <button id="inspectBtn" class="sub-btn">驗車已完成</button>
+  </div>
+
+  <script src="app.js"></script>
 </body>
-
 </html>
