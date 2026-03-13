@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <meta charset="utf-8">
-
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
 <title>聯群物流出車</title>
@@ -14,100 +12,66 @@
 <style>
 
 body{
-
 font-family:Arial;
-
-padding:20px;
-
 background:#f5f5f5;
-
-font-size:20px;
-
+padding:20px;
+font-size:22px;
 }
 
 .card{
-
 background:#fff;
-
 padding:20px;
-
 border-radius:16px;
-
 margin-bottom:16px;
-
 box-shadow:0 2px 8px rgba(0,0,0,0.08);
-
 }
 
 .hidden{
-
 display:none;
-
-}
-
-h2{
-
-font-size:26px;
-
 }
 
 button{
 
+width:100%;
 padding:18px;
 
 border:none;
-
 border-radius:14px;
 
-font-size:22px;
-
-width:100%;
-
+font-size:24px;
 margin-top:12px;
 
 }
 
 .primary{
-
 background:#2c7be5;
-
 color:#fff;
-
 }
 
 .task-btn{
-
 background:#eee;
-
 }
 
 .warning{
 
 background:#fff3cd;
-
 padding:14px;
-
 border-radius:12px;
-
 margin-bottom:12px;
-
-font-size:18px;
 
 }
 
 input,select{
 
 width:100%;
-
 padding:14px;
 
+font-size:22px;
+
+margin-top:10px;
+
 border-radius:10px;
-
 border:1px solid #ccc;
-
-margin-top:8px;
-
-font-size:20px;
 
 }
 
@@ -121,16 +85,16 @@ font-size:20px;
 
 <div class="card">
 
-<h2>🚚 聯群物流出車系統</h2>
+🚚 聯群物流出車系統
+
+<br><br>
 
 車號：
-
 <b id="carText"></b>
 
 <br><br>
 
 司機：
-
 <b id="driverNameText"></b>
 
 </div>
@@ -138,9 +102,9 @@ font-size:20px;
 
 <div id="bindArea" class="card hidden">
 
-<h3>綁定司機</h3>
+綁定司機
 
-<input id="nameInput" placeholder="請輸入姓名">
+<input id="nameInput" placeholder="輸入姓名">
 
 <button id="bindBtn" class="primary">綁定</button>
 
@@ -151,11 +115,10 @@ font-size:20px;
 
 <div class="warning">
 
-⚠ 中區以外司機請選「區域司機」
+中區以外司機請選「區域司機」
 
 </div>
 
-<h3>選擇任務</h3>
 
 <button class="task-btn" data-type="常溫">常溫配送</button>
 
@@ -170,7 +133,7 @@ font-size:20px;
 
 <div id="routeBlock" class="hidden">
 
-<label>路線</label>
+路線
 
 <select id="routeSelect"></select>
 
@@ -179,9 +142,9 @@ font-size:20px;
 
 <div id="noteArea" class="hidden">
 
-<label>備註 / 區域</label>
+備註 / 區域
 
-<input id="noteInput" placeholder="例如 台中 / 楊梅專車">
+<input id="noteInput">
 
 </div>
 
@@ -234,9 +197,7 @@ const msg=document.getElementById('msg')
 
 
 function setMsg(t){
-
 msg.textContent=t||''
-
 }
 
 
@@ -255,16 +216,11 @@ return car||''
 }
 
 
-async function api(action,payload={})
-
-{
+async function api(action,payload={}){
 
 const params=new URLSearchParams({
-
 action,
-
 ...payload
-
 })
 
 const res=await fetch(`${GAS_API_URL}?${params}`)
@@ -287,7 +243,7 @@ routesData=result.routes
 
 document.querySelectorAll('.task-btn').forEach(btn=>{
 
-btn.addEventListener('click',()=>{
+btn.onclick=()=>{
 
 selectedType=btn.dataset.type
 
@@ -297,7 +253,6 @@ routeSelect.innerHTML=''
 if(selectedType==="專車"){
 
 routeBlock.classList.add('hidden')
-
 noteArea.classList.remove('hidden')
 
 return
@@ -308,10 +263,9 @@ return
 if(selectedType==="區域司機"){
 
 routeBlock.classList.add('hidden')
-
 noteArea.classList.remove('hidden')
 
-noteInput.placeholder="請輸入區域 (例如 台中)"
+noteInput.placeholder="輸入區域 (例如 台中)"
 
 return
 
@@ -319,7 +273,6 @@ return
 
 
 noteArea.classList.add('hidden')
-
 routeBlock.classList.remove('hidden')
 
 const list=routesData.filter(r=>r.type===selectedType)
@@ -329,14 +282,13 @@ list.forEach(r=>{
 const opt=document.createElement("option")
 
 opt.value=r.name
-
 opt.textContent=r.name
 
 routeSelect.appendChild(opt)
 
 })
 
-})
+}
 
 })
 
@@ -348,7 +300,6 @@ currentCar=getCar()
 if(!currentCar){
 
 carText.textContent='沒有取得車號'
-
 return
 
 }
@@ -362,7 +313,6 @@ await liff.init({liffId:LIFF_ID})
 if(!liff.isLoggedIn()){
 
 liff.login({redirectUri:window.location.href})
-
 return
 
 }
@@ -395,7 +345,7 @@ bindArea.classList.remove('hidden')
 }
 
 
-bindBtn.addEventListener('click',async()=>{
+bindBtn.onclick=async()=>{
 
 const name=nameInput.value.trim()
 
@@ -413,12 +363,10 @@ tripArea.classList.remove('hidden')
 
 await loadRoutes()
 
-})
+}
 
 
-tripBtn.addEventListener('click',async()=>{
-
-if(tripBtn.disabled)return
+tripBtn.onclick=async()=>{
 
 const route=routeSelect.value
 const note=noteInput.value
@@ -427,7 +375,6 @@ const note=noteInput.value
 if(!selectedType){
 
 setMsg("請選任務")
-
 return
 
 }
@@ -436,7 +383,6 @@ return
 if(selectedType==="區域司機" && !note){
 
 setMsg("請輸入區域")
-
 return
 
 }
@@ -445,16 +391,6 @@ return
 if(selectedType!=="專車" && selectedType!=="區域司機" && !route){
 
 setMsg("請選路線")
-
-return
-
-}
-
-
-if(selectedType==="專車" && !note){
-
-setMsg("請填備註")
-
 return
 
 }
@@ -466,15 +402,10 @@ tripBtn.disabled=true
 const result=await api('logTrip',{
 
 lineId:currentLineId,
-
 name:currentDriverName,
-
 car:currentCar,
-
 type:selectedType,
-
 route:selectedType==="區域司機"?note:route,
-
 note:selectedType==="區域司機"?'':note
 
 })
@@ -484,19 +415,17 @@ if(result.ok){
 
 setMsg("出車成功")
 
-tripBtn.innerText="已出車"
-
 showVehicleStatus()
 
 }else{
 
-setMsg(result.message)
+setMsg("出車失敗")
 
 tripBtn.disabled=false
 
 }
 
-})
+}
 
 
 async function showVehicleStatus(){
