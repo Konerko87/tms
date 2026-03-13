@@ -3,14 +3,12 @@ const LIFF_ID = '2008915809-vp9PFMVX'
 const GAS_API_URL =
 'https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec'
 
-
 let currentCar=''
 let currentLineId=''
 let currentDriverName=''
 let selectedType=''
 
 let routesData=[]
-
 
 const carText=document.getElementById('carText')
 const driverNameText=document.getElementById('driverNameText')
@@ -92,10 +90,25 @@ selectedType=btn.dataset.type
 
 routeSelect.innerHTML=''
 
+/* 專車 */
+
 if(selectedType==="專車"){
 
 routeBlock.classList.add('hidden')
 noteArea.classList.remove('hidden')
+
+return
+
+}
+
+/* 區域司機 */
+
+if(selectedType==="區域司機"){
+
+routeBlock.classList.add('hidden')
+noteArea.classList.remove('hidden')
+
+noteInput.placeholder="請輸入區域 (例如 台中)"
 
 return
 
@@ -137,9 +150,7 @@ return
 
 carText.textContent=currentCar
 
-
 await liff.init({liffId:LIFF_ID})
-
 
 if(!liff.isLoggedIn()){
 
@@ -148,14 +159,11 @@ return
 
 }
 
-
 const profile=await liff.getProfile()
 
 currentLineId=profile.userId
 
-
 const result=await api('getDriver',{lineId:currentLineId})
-
 
 if(result.found){
 
@@ -205,10 +213,8 @@ tripBtn.addEventListener('click',async()=>{
 
 if(tripBtn.disabled)return
 
-
 const route=routeSelect.value
 const note=noteInput.value
-
 
 if(!selectedType){
 
@@ -217,7 +223,16 @@ return
 
 }
 
-if(selectedType!=="專車"&&!route){
+if(selectedType==="區域司機"){
+
+if(!note){
+setMsg("請輸入區域")
+return
+}
+
+}
+
+if(selectedType!=="專車" && selectedType!=="區域司機" && !route){
 
 setMsg("請選路線")
 return
@@ -231,9 +246,7 @@ return
 
 }
 
-
 tripBtn.disabled=true
-
 
 const result=await api('logTrip',{
 
@@ -241,17 +254,18 @@ lineId:currentLineId,
 name:currentDriverName,
 car:currentCar,
 type:selectedType,
-route:route,
-note:note
+route:selectedType==="區域司機"?note:route,
+note:selectedType==="區域司機"?'':note
 
 })
-
 
 if(result.ok){
 
 setMsg("出車成功")
 
 tripBtn.innerText="已出車"
+
+showVehicleStatus()
 
 }else{
 
@@ -264,6 +278,64 @@ tripBtn.disabled=false
 })
 
 
+
+/* 車輛提醒 */
+
+async function showVehicleStatus(){
+
+const data=await api('getVehicleStatus',{car:currentCar})
+
+if(!data.ok)return
+
+alert(
+
+`🚚 ${currentCar} 出車成功
+
+保養剩餘 ${data.maintRemain} 天
+下次保養 ${data.maintainDue}
+
+驗車期限 ${data.inspectionDate}
+剩餘 ${data.inspectionRemain} 天`
+
+)
+
+}
+
+
+/* 更新保養 */
+
+async function finishMaintenance(){
+
+const yes=confirm("確認保養完成？")
+
+if(!yes)return
+
+await api('finishMaintenance',{car:currentCar})
+
+alert("保養已更新")
+
+}
+
+
+/* 更新驗車 */
+
+async function finishInspection(){
+
+const yes=confirm("確認驗車完成？")
+
+if(!yes)return
+
+await api('finishInspection',{car:currentCar})
+
+alert("驗車已更新")
+
+}
+
+
 init()
+
+
+init()
+
 
 
