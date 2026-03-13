@@ -1,168 +1,140 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-
 <title>聯群物流 出車系統</title>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
-
 body{
-font-family:Arial;
-padding:20px;
-background:#f5f5f5;
+  font-family: -apple-system,BlinkMacSystemFont,Arial;
+  background:#f5f6f8;
+  padding:18px;
 }
-
 .card{
-background:#fff;
-padding:16px;
-border-radius:12px;
-margin-bottom:16px;
-box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  background:#fff;
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
 }
-
+.hidden{ display:none; }
+h2{ margin-top:0 }
 button{
-padding:12px;
-border:none;
-border-radius:10px;
-font-size:16px;
-width:100%;
-margin-top:10px;
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  font-size:16px;
+  margin-top:10px;
 }
-
 .primary{
-background:#2c7be5;
-color:#fff;
+  background:#2c7be5;
+  color:#fff;
 }
-
 .task-btn{
-background:#eee;
-margin-top:8px;
+  background:#eee;
 }
-
-.hidden{
-display:none;
-}
-
-input,select{
-width:100%;
-padding:10px;
-border-radius:8px;
-border:1px solid #ccc;
-margin-top:6px;
-}
-
 .warning{
-background:#fff3cd;
-padding:10px;
-border-radius:8px;
-margin-bottom:10px;
+  background:#fff3cd;
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:10px;
+  font-weight:600;
 }
-
+input,select{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  margin-top:6px;
+}
+small{
+  color:#666;
+}
 </style>
-
 </head>
-
 
 <body>
 
 <div class="card">
-
 <h2>🚚 聯群物流 出車系統</h2>
 
 車號：
-
-<span id="carText"></span>
-
+<b id="carText"></b>
 <br><br>
 
 司機：
-
-<span id="driverNameText"></span>
-
+<b id="driverNameText"></b>
 </div>
 
 
+<!-- 綁定司機 -->
 <div id="bindArea" class="card hidden">
-
 <h3>綁定司機</h3>
 
 <input id="nameInput" placeholder="請輸入姓名">
 
 <button id="bindBtn" class="primary">綁定</button>
-
 </div>
 
 
+<!-- 出車 -->
 <div id="tripArea" class="card hidden">
 
 <div class="warning">
-
 ⚠ 中區以外司機請選「區域司機」
-
 </div>
 
 <h3>選擇任務</h3>
 
 <button class="task-btn" data-type="常溫">常溫配送</button>
-
 <button class="task-btn" data-type="低溫">低溫配送</button>
-
 <button class="task-btn" data-type="爆量專車">爆量專車</button>
-
 <button class="task-btn" data-type="專車">專車</button>
-
 <button class="task-btn" data-type="區域司機">區域司機</button>
 
+<br><br>
 
 <div id="routeBlock" class="hidden">
-
 <label>路線</label>
-
 <select id="routeSelect"></select>
-
 </div>
-
 
 <div id="noteArea" class="hidden">
-
 <label>備註 / 區域</label>
-
 <input id="noteInput" placeholder="例如：楊梅專車 / 台中">
-
 </div>
 
-
-<button id="tripBtn" class="primary">
-
-確認出車
-
-</button>
-
+<button id="tripBtn" class="primary">確認出車</button>
 
 <p id="msg"></p>
 
 </div>
 
 
-
 <script>
+
+/* ====== 設定 ====== */
 
 const LIFF_ID='2008915809-vp9PFMVX'
 
-const GAS_API_URL='https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec'
+const GAS_API_URL=
+'https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec'
+
+
+/* ====== 全域變數 ====== */
 
 let currentCar=''
 let currentLineId=''
 let currentDriverName=''
 let selectedType=''
-
 let routesData=[]
 
+
+/* ====== DOM ====== */
 
 const carText=document.getElementById('carText')
 const driverNameText=document.getElementById('driverNameText')
@@ -184,10 +156,14 @@ const tripBtn=document.getElementById('tripBtn')
 const msg=document.getElementById('msg')
 
 
+/* ====== 工具 ====== */
+
 function setMsg(t){
 msg.textContent=t||''
 }
 
+
+/* 取得 QR 車號 */
 
 function getCar(){
 
@@ -204,20 +180,23 @@ return car||''
 }
 
 
+/* API GET */
 
 async function api(action,payload={}){
 
-const res=await fetch(GAS_API_URL,{
-method:'POST',
-headers:{'Content-Type':'text/plain'},
-body:JSON.stringify({action,...payload})
+const params=new URLSearchParams({
+action,
+...payload
 })
+
+const res=await fetch(`${GAS_API_URL}?${params}`)
 
 return await res.json()
 
 }
 
 
+/* 載入路線 */
 
 async function loadRoutes(){
 
@@ -230,6 +209,7 @@ routesData=result.routes
 }
 
 
+/* 任務按鈕 */
 
 document.querySelectorAll('.task-btn').forEach(btn=>{
 
@@ -239,13 +219,18 @@ selectedType=btn.dataset.type
 
 routeSelect.innerHTML=''
 
+/* 專車 */
+
 if(selectedType==="專車"){
 
 routeBlock.classList.add('hidden')
 noteArea.classList.remove('hidden')
+
 return
 
 }
+
+/* 區域司機 */
 
 if(selectedType==="區域司機"){
 
@@ -279,6 +264,7 @@ routeSelect.appendChild(opt)
 })
 
 
+/* ====== 初始化 ====== */
 
 async function init(){
 
@@ -299,11 +285,9 @@ await liff.init({liffId:LIFF_ID})
 if(!liff.isLoggedIn()){
 
 liff.login({redirectUri:window.location.href})
-
 return
 
 }
-
 
 const profile=await liff.getProfile()
 
@@ -312,9 +296,10 @@ currentLineId=profile.userId
 
 const result=await api('getDriver',{lineId:currentLineId})
 
+
 if(result.found){
 
-currentDriverName=result.driverName
+currentDriverName=result.name
 
 driverNameText.textContent=currentDriverName
 
@@ -331,6 +316,7 @@ bindArea.classList.remove('hidden')
 }
 
 
+/* ====== 綁定司機 ====== */
 
 bindBtn.addEventListener('click',async()=>{
 
@@ -353,6 +339,7 @@ await loadRoutes()
 })
 
 
+/* ====== 出車 ====== */
 
 tripBtn.addEventListener('click',async()=>{
 
@@ -362,38 +349,26 @@ const route=routeSelect.value
 const note=noteInput.value
 
 if(!selectedType){
-
 setMsg("請選任務")
 return
-
 }
 
-if(selectedType==="區域司機"){
-
-if(!note){
+if(selectedType==="區域司機" && !note){
 setMsg("請輸入區域")
 return
 }
 
-}
-
 if(selectedType!=="專車" && selectedType!=="區域司機" && !route){
-
 setMsg("請選路線")
 return
-
 }
 
-if(selectedType==="專車"&&!note){
-
+if(selectedType==="專車" && !note){
 setMsg("請填備註")
 return
-
 }
 
-
 tripBtn.disabled=true
-
 
 const result=await api('logTrip',{
 
@@ -426,6 +401,7 @@ tripBtn.disabled=false
 })
 
 
+/* ====== 車輛提醒 ====== */
 
 async function showVehicleStatus(){
 
@@ -448,6 +424,7 @@ alert(
 }
 
 
+/* ====== 更新保養 ====== */
 
 async function finishMaintenance(){
 
@@ -462,6 +439,7 @@ alert("保養已更新")
 }
 
 
+/* ====== 更新驗車 ====== */
 
 async function finishInspection(){
 
@@ -476,10 +454,11 @@ alert("驗車已更新")
 }
 
 
+/* 啟動 */
+
 init()
 
 </script>
 
 </body>
-
 </html>
