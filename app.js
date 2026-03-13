@@ -3,12 +3,14 @@ const LIFF_ID = '2008915809-vp9PFMVX'
 const GAS_API_URL =
 'https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec'
 
+
 let currentCar=''
 let currentLineId=''
 let currentDriverName=''
 let selectedType=''
 
 let routesData=[]
+
 
 const carText=document.getElementById('carText')
 const driverNameText=document.getElementById('driverNameText')
@@ -31,11 +33,11 @@ const msg=document.getElementById('msg')
 
 
 function setMsg(t){
+
 msg.textContent=t||''
+
 }
 
-
-/* 取得車號 */
 
 function getCar(){
 
@@ -52,22 +54,21 @@ return car||''
 }
 
 
-/* API */
-
 async function api(action,payload={}){
 
-const res=await fetch(GAS_API_URL,{
-method:'POST',
-headers:{'Content-Type':'text/plain'},
-body:JSON.stringify({action,...payload})
+const params=new URLSearchParams({
+
+action,
+...payload
+
 })
+
+const res=await fetch(`${GAS_API_URL}?${params}`)
 
 return await res.json()
 
 }
 
-
-/* 讀取 routes */
 
 async function loadRoutes(){
 
@@ -80,17 +81,14 @@ routesData=result.routes
 }
 
 
-/* 任務按鈕 */
-
 document.querySelectorAll('.task-btn').forEach(btn=>{
 
-btn.addEventListener('click',()=>{
+btn.onclick=()=>{
 
 selectedType=btn.dataset.type
 
 routeSelect.innerHTML=''
 
-/* 專車 */
 
 if(selectedType==="專車"){
 
@@ -101,18 +99,18 @@ return
 
 }
 
-/* 區域司機 */
 
 if(selectedType==="區域司機"){
 
 routeBlock.classList.add('hidden')
 noteArea.classList.remove('hidden')
 
-noteInput.placeholder="請輸入區域 (例如 台中)"
+noteInput.placeholder="輸入區域 (例如 台中)"
 
 return
 
 }
+
 
 noteArea.classList.add('hidden')
 routeBlock.classList.remove('hidden')
@@ -130,12 +128,10 @@ routeSelect.appendChild(opt)
 
 })
 
-})
+}
 
 })
 
-
-/* 初始化 */
 
 async function init(){
 
@@ -150,7 +146,9 @@ return
 
 carText.textContent=currentCar
 
+
 await liff.init({liffId:LIFF_ID})
+
 
 if(!liff.isLoggedIn()){
 
@@ -159,15 +157,18 @@ return
 
 }
 
+
 const profile=await liff.getProfile()
 
 currentLineId=profile.userId
 
+
 const result=await api('getDriver',{lineId:currentLineId})
+
 
 if(result.found){
 
-currentDriverName=result.driverName
+currentDriverName=result.name
 
 driverNameText.textContent=currentDriverName
 
@@ -184,9 +185,7 @@ bindArea.classList.remove('hidden')
 }
 
 
-/* 綁定司機 */
-
-bindBtn.addEventListener('click',async()=>{
+bindBtn.onclick=async()=>{
 
 const name=nameInput.value.trim()
 
@@ -204,17 +203,14 @@ tripArea.classList.remove('hidden')
 
 await loadRoutes()
 
-})
+}
 
 
-/* 出車 */
-
-tripBtn.addEventListener('click',async()=>{
-
-if(tripBtn.disabled)return
+tripBtn.onclick=async()=>{
 
 const route=routeSelect.value
 const note=noteInput.value
+
 
 if(!selectedType){
 
@@ -223,14 +219,14 @@ return
 
 }
 
-if(selectedType==="區域司機"){
 
-if(!note){
+if(selectedType==="區域司機" && !note){
+
 setMsg("請輸入區域")
 return
-}
 
 }
+
 
 if(selectedType!=="專車" && selectedType!=="區域司機" && !route){
 
@@ -239,14 +235,9 @@ return
 
 }
 
-if(selectedType==="專車"&&!note){
-
-setMsg("請填備註")
-return
-
-}
 
 tripBtn.disabled=true
+
 
 const result=await api('logTrip',{
 
@@ -259,27 +250,23 @@ note:selectedType==="區域司機"?'':note
 
 })
 
+
 if(result.ok){
 
 setMsg("出車成功")
-
-tripBtn.innerText="已出車"
 
 showVehicleStatus()
 
 }else{
 
-setMsg(result.message)
+setMsg("出車失敗")
 
 tripBtn.disabled=false
 
 }
 
-})
+}
 
-
-
-/* 車輛提醒 */
 
 async function showVehicleStatus(){
 
@@ -302,40 +289,4 @@ alert(
 }
 
 
-/* 更新保養 */
-
-async function finishMaintenance(){
-
-const yes=confirm("確認保養完成？")
-
-if(!yes)return
-
-await api('finishMaintenance',{car:currentCar})
-
-alert("保養已更新")
-
-}
-
-
-/* 更新驗車 */
-
-async function finishInspection(){
-
-const yes=confirm("確認驗車完成？")
-
-if(!yes)return
-
-await api('finishInspection',{car:currentCar})
-
-alert("驗車已更新")
-
-}
-
-
 init()
-
-
-init()
-
-
-
