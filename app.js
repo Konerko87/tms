@@ -13,6 +13,8 @@ let routesData = [];
 let areasData = [];
 
 
+/* DOM */
+
 const carText = document.getElementById('carText');
 const driverNameText = document.getElementById('driverNameText');
 
@@ -45,26 +47,24 @@ const inspectBtn = document.getElementById('inspectBtn');
 const closeVehicleModalBtn = document.getElementById('closeVehicleModalBtn');
 
 
+/* UI */
+
 function setMsg(t){
 msg.textContent=t||''
 }
-
 
 function showLoading(text='讀取中...'){
 loadingText.textContent=text
 loadingMask.classList.remove('hidden')
 }
 
-
 function hideLoading(){
 loadingMask.classList.add('hidden')
 }
 
-
 function openVehicleModal(){
 vehicleModal.classList.remove('hidden')
 }
-
 
 function closeVehicleModal(){
 vehicleModal.classList.add('hidden')
@@ -74,7 +74,7 @@ closeVehicleModalBtn.onclick=closeVehicleModal
 
 
 
-/* 車號取得 */
+/* 車號 */
 
 function getCar(){
 
@@ -142,9 +142,7 @@ areasData=result.areas||[]
 function clearTaskSelectedStyle(){
 
 document.querySelectorAll('.task-btn').forEach(btn=>{
-
 btn.classList.remove('selected-task')
-
 })
 
 }
@@ -216,7 +214,6 @@ if(selectedType==="專車"){
 
 noteArea.classList.remove('hidden')
 noteInput.placeholder='例如：楊梅專車'
-
 return
 
 }
@@ -225,7 +222,6 @@ if(selectedType==="區域司機"){
 
 areaBlock.classList.remove('hidden')
 renderAreas()
-
 return
 
 }
@@ -267,7 +263,6 @@ if(!liff.isLoggedIn()){
 
 showLoading('LINE登入中...')
 liff.login({redirectUri:window.location.href})
-
 return
 
 }
@@ -561,4 +556,8 @@ await showVehicleStatus()
 
 /* 啟動 */
 
+document.addEventListener("DOMContentLoaded",()=>{
+
 init()
+
+})
