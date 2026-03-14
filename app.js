@@ -562,7 +562,3 @@ await showVehicleStatus()
 /* 啟動 */
 
 init()
-
-};
-
-init();
