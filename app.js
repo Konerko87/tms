@@ -44,39 +44,40 @@ let closeVehicleModalBtn;
 
 
 function setMsg(t){
-msg.textContent = t || '';
+if(msg) msg.textContent = t || '';
 }
 
 function showLoading(text='讀取中...'){
-loadingText.textContent = text;
-loadingMask.classList.remove('hidden');
+if(loadingText) loadingText.textContent = text;
+if(loadingMask) loadingMask.classList.remove('hidden');
 }
 
 function hideLoading(){
-loadingMask.classList.add('hidden');
+if(loadingMask) loadingMask.classList.add('hidden');
 }
 
 function openVehicleModal(){
-vehicleModal.classList.remove('hidden');
+if(vehicleModal) vehicleModal.classList.remove('hidden');
 }
 
 function closeVehicleModal(){
-vehicleModal.classList.add('hidden');
+if(vehicleModal) vehicleModal.classList.add('hidden');
 }
 
 
+/* 這裡是修正的地方 */
 function resetInitView(){
 
-bindArea.classList.add('hidden');
-tripArea.classList.add('hidden');
+if(bindArea) bindArea.classList.add('hidden');
+if(tripArea) tripArea.classList.add('hidden');
 
-routeBlock.classList.add('hidden');
-areaBlock.classList.add('hidden');
-noteArea.classList.add('hidden');
+if(routeBlock) routeBlock.classList.add('hidden');
+if(areaBlock) areaBlock.classList.add('hidden');
+if(noteArea) noteArea.classList.add('hidden');
 
-loadingMask.classList.add('hidden');
+if(loadingMask) loadingMask.classList.add('hidden');
 
-nameInput.value='';
+if(nameInput) nameInput.value='';
 
 setMsg('');
 
@@ -363,9 +364,13 @@ maintBtn=document.getElementById('maintBtn');
 inspectBtn=document.getElementById('inspectBtn');
 closeVehicleModalBtn=document.getElementById('closeVehicleModalBtn');
 
+if(closeVehicleModalBtn){
 closeVehicleModalBtn.onclick=()=>closeVehicleModal();
+}
 
+if(bindBtn){
 bindBtn.onclick=()=>bindDriver();
+}
 
 init();
 
