@@ -11,74 +11,62 @@ let selectedType = '';
 let routesData = [];
 let areasData = [];
 
-let carText;
-let driverNameText;
+const carText = document.getElementById('carText');
+const driverNameText = document.getElementById('driverNameText');
 
-let bindArea;
-let nameInput;
-let bindBtn;
+const bindArea = document.getElementById('bindArea');
+const nameInput = document.getElementById('nameInput');
+const bindBtn = document.getElementById('bindBtn');
 
-let tripArea;
+const tripArea = document.getElementById('tripArea');
 
-let routeBlock;
-let routeSelect;
+const routeBlock = document.getElementById('routeBlock');
+const routeSelect = document.getElementById('routeSelect');
 
-let areaBlock;
-let areaSelect;
+const areaBlock = document.getElementById('areaBlock');
+const areaSelect = document.getElementById('areaSelect');
 
-let noteArea;
-let noteInput;
+const noteArea = document.getElementById('noteArea');
+const noteInput = document.getElementById('noteInput');
 
-let tripBtn;
-let msg;
+const tripBtn = document.getElementById('tripBtn');
+const msg = document.getElementById('msg');
 
-let loadingMask;
-let loadingText;
+const loadingMask = document.getElementById('loadingMask');
+const loadingText = document.getElementById('loadingText');
 
-let vehicleModal;
-let vehicleModalTitle;
-let vehicleModalContent;
-let maintBtn;
-let inspectBtn;
-let closeVehicleModalBtn;
+const vehicleModal = document.getElementById('vehicleModal');
+const vehicleModalTitle = document.getElementById('vehicleModalTitle');
+const vehicleModalContent = document.getElementById('vehicleModalContent');
+const maintBtn = document.getElementById('maintBtn');
+const inspectBtn = document.getElementById('inspectBtn');
+const closeVehicleModalBtn = document.getElementById('closeVehicleModalBtn');
 
 function setMsg(t) {
-  if (msg) msg.textContent = t || '';
+  msg.textContent = t || '';
 }
 
 function showLoading(text = '讀取中...') {
-  if (loadingText) loadingText.textContent = text;
-  if (loadingMask) loadingMask.classList.remove('hidden');
+  loadingText.textContent = text;
+  loadingMask.classList.remove('hidden');
 }
 
 function hideLoading() {
-  if (loadingMask) loadingMask.classList.add('hidden');
+  loadingMask.classList.add('hidden');
 }
 
 function openVehicleModal() {
-  if (vehicleModal) vehicleModal.classList.remove('hidden');
+  vehicleModal.classList.remove('hidden');
 }
 
 function closeVehicleModal() {
-  if (vehicleModal) vehicleModal.classList.add('hidden');
+  vehicleModal.classList.add('hidden');
 }
 
-function resetInitView() {
-  if (bindArea) bindArea.classList.add('hidden');
-  if (tripArea) tripArea.classList.add('hidden');
-
-  if (routeBlock) routeBlock.classList.add('hidden');
-  if (areaBlock) areaBlock.classList.add('hidden');
-  if (noteArea) noteArea.classList.add('hidden');
-
-  if (loadingMask) loadingMask.classList.add('hidden');
-
-  if (nameInput) nameInput.value = '';
-
-  setMsg('');
-}
+closeVehicleModalBtn.onclick = closeVehicleModal;
 
 function getCar() {
+
   const url = new URL(window.location.href);
 
   let car = url.searchParams.get('car');
@@ -93,285 +81,222 @@ function getCar() {
   }
 
   return String(car || '').trim().toUpperCase();
+
 }
 
-/* 改成 GET，避開 GAS + LIFF 的 CORS POST 問題 */
 async function api(action, payload = {}) {
-  try {
-    const params = new URLSearchParams();
 
-    params.set('action', action);
+  const url =
+    GAS_API_URL +
+    '?action=' +
+    encodeURIComponent(action) +
+    '&' +
+    new URLSearchParams(payload).toString();
 
-    Object.entries(payload).forEach(([key, value]) => {
-      params.set(key, value == null ? '' : String(value));
-    });
+  const res = await fetch(url);
 
-    const url = `${GAS_API_URL}?${params.toString()}`;
+  const text = await res.text();
 
-    const res = await fetch(url, {
-      method: 'GET'
-    });
+  return JSON.parse(text);
 
-    const text = await res.text();
-    return JSON.parse(text);
-  } catch (err) {
-    console.error('API error:', err);
-    return {
-      ok: false,
-      message: 'API失敗'
-    };
-  }
-}
-
-function clearTaskSelectedStyle() {
-  document.querySelectorAll('.task-btn').forEach(btn => {
-    btn.classList.remove('selected-task');
-  });
 }
 
 function renderRoutesByType(type) {
-  if (!routeSelect) return;
 
   routeSelect.innerHTML = '<option value="">請選擇路線</option>';
 
-  const list = routesData.filter(r => String(r.type || '').trim() === type);
+  const list = routesData.filter(
+    r => String(r.type || '').trim() === type
+  );
 
   list.forEach(r => {
+
     const opt = document.createElement('option');
+
     opt.value = r.name;
     opt.textContent = r.name;
+
     routeSelect.appendChild(opt);
+
   });
+
 }
 
 function renderAreas() {
-  if (!areaSelect) return;
 
   areaSelect.innerHTML = '<option value="">請選擇區域</option>';
 
-  areasData.forEach(a => {
+  areasData.forEach(area => {
+
     const opt = document.createElement('option');
-    opt.value = a;
-    opt.textContent = a;
+
+    opt.value = area;
+    opt.textContent = area;
+
     areaSelect.appendChild(opt);
+
   });
+
 }
 
-function bindTaskButtons() {
-  document.querySelectorAll('.task-btn').forEach(btn => {
-    btn.onclick = () => {
-      clearTaskSelectedStyle();
-      btn.classList.add('selected-task');
+document.querySelectorAll('.task-btn').forEach(btn => {
 
-      selectedType = btn.dataset.type || '';
+  btn.onclick = () => {
 
-      setMsg('');
+    document
+      .querySelectorAll('.task-btn')
+      .forEach(b => b.classList.remove('selected-task'));
 
-      if (routeBlock) routeBlock.classList.add('hidden');
-      if (areaBlock) areaBlock.classList.add('hidden');
-      if (noteArea) noteArea.classList.add('hidden');
+    btn.classList.add('selected-task');
 
-      if (routeSelect) routeSelect.value = '';
-      if (areaSelect) areaSelect.value = '';
-      if (noteInput) noteInput.value = '';
+    selectedType = btn.dataset.type || '';
 
-      if (selectedType === '專車') {
-        if (noteArea) noteArea.classList.remove('hidden');
-        if (noteInput) noteInput.placeholder = '例如：楊梅專車';
-        return;
-      }
+    routeBlock.classList.add('hidden');
+    areaBlock.classList.add('hidden');
+    noteArea.classList.add('hidden');
 
-      if (selectedType === '區域司機') {
-        if (areaBlock) areaBlock.classList.remove('hidden');
-        renderAreas();
-        return;
-      }
+    if (selectedType === '專車') {
 
-      if (routeBlock) routeBlock.classList.remove('hidden');
-      renderRoutesByType(selectedType);
-    };
-  });
-}
+      noteArea.classList.remove('hidden');
+
+      return;
+
+    }
+
+    if (selectedType === '區域司機') {
+
+      areaBlock.classList.remove('hidden');
+
+      renderAreas();
+
+      return;
+
+    }
+
+    routeBlock.classList.remove('hidden');
+
+    renderRoutesByType(selectedType);
+
+  };
+
+});
 
 async function init() {
-  try {
-    resetInitView();
 
-    showLoading('登入中...');
+  showLoading('登入中...');
 
-    currentCar = getCar();
+  currentCar = getCar();
 
-    if (!currentCar) {
-      if (carText) carText.textContent = '沒有取得車號';
-      hideLoading();
-      return;
-    }
+  if (!currentCar) {
 
-    if (carText) carText.textContent = currentCar;
-
-    await liff.init({ liffId: LIFF_ID });
-
-    if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: window.location.href });
-      return;
-    }
-
-    const profile = await liff.getProfile();
-    currentLineId = String(profile.userId || '').trim();
-
-    if (!currentLineId) {
-      hideLoading();
-      setMsg('LINE ID 取得失敗');
-      return;
-    }
-
-    showLoading('讀取司機資料...');
-
-    const initResult = await api('initData', { lineId: currentLineId });
-
-    console.log('initData result:', initResult);
-
-    if (!initResult || !initResult.ok) {
-      hideLoading();
-      setMsg(initResult && initResult.message ? initResult.message : '初始化失敗');
-      return;
-    }
-
-    routesData = Array.isArray(initResult.routes) ? initResult.routes : [];
-    areasData = Array.isArray(initResult.areas) ? initResult.areas : [];
-
-    const driver = initResult.driver || {};
-
-    if (driver && driver.found === true) {
-      currentDriverName = String(driver.name || '').trim();
-
-      if (driverNameText) driverNameText.textContent = currentDriverName;
-
-      if (bindArea) bindArea.classList.add('hidden');
-      if (tripArea) tripArea.classList.remove('hidden');
-
-      setMsg('登入成功');
-    } else {
-      currentDriverName = '';
-
-      if (driverNameText) driverNameText.textContent = '尚未綁定';
-
-      if (bindArea) bindArea.classList.remove('hidden');
-      if (tripArea) tripArea.classList.add('hidden');
-
-      if (nameInput) nameInput.focus();
-
-      setMsg('第一次使用請輸入姓名');
-    }
+    carText.textContent = '沒有取得車號';
 
     hideLoading();
-  } catch (err) {
-    console.error(err);
-    hideLoading();
-    setMsg('初始化失敗');
-  }
-}
 
-async function bindDriver() {
-  const name = nameInput ? nameInput.value.trim() : '';
-
-  if (!currentLineId) {
-    setMsg('尚未取得 LINE 身分');
     return;
+
   }
 
-  if (!name) {
-    setMsg('請輸入姓名');
+  carText.textContent = currentCar;
+
+  await liff.init({ liffId: LIFF_ID });
+
+  if (!liff.isLoggedIn()) {
+
+    liff.login({
+      redirectUri: window.location.href
+    });
+
     return;
+
   }
 
-  showLoading('綁定中...');
+  const profile = await liff.getProfile();
 
-  const result = await api('bindDriver', {
-    lineId: currentLineId,
-    name
-  });
+  currentLineId = String(profile.userId || '').trim();
+
+  showLoading('讀取資料...');
+
+  const initResult = await api(
+    'initData',
+    { lineId: currentLineId }
+  );
+
+  routesData = initResult.routes || [];
+  areasData = initResult.areas || [];
+
+  const driver = initResult.driver || {};
+
+  if (driver.found) {
+
+    currentDriverName = driver.name;
+
+    driverNameText.textContent = currentDriverName;
+
+    bindArea.classList.add('hidden');
+    tripArea.classList.remove('hidden');
+
+  } else {
+
+    driverNameText.textContent = '未綁定';
+
+    bindArea.classList.remove('hidden');
+    tripArea.classList.add('hidden');
+
+  }
 
   hideLoading();
 
-  if (!result || !result.ok) {
-    setMsg(result && result.message ? result.message : '綁定失敗');
+}
+
+bindBtn.onclick = async () => {
+
+  const name = nameInput.value.trim();
+
+  if (!name) {
+
+    setMsg('請輸入姓名');
+
     return;
+
+  }
+
+  showLoading('綁定司機...');
+
+  const result = await api(
+    'bindDriver',
+    {
+      lineId: currentLineId,
+      name
+    }
+  );
+
+  hideLoading();
+
+  if (!result.ok) {
+
+    setMsg('綁定失敗');
+
+    return;
+
   }
 
   currentDriverName = name;
 
-  if (driverNameText) driverNameText.textContent = name;
+  driverNameText.textContent = name;
 
-  if (bindArea) bindArea.classList.add('hidden');
-  if (tripArea) tripArea.classList.remove('hidden');
+  bindArea.classList.add('hidden');
+  tripArea.classList.remove('hidden');
 
-  if (nameInput) nameInput.value = '';
+};
 
-  setMsg('綁定成功');
-}
+tripBtn.onclick = async () => {
 
-async function showVehicleStatus() {
-  const data = await api('getVehicleStatus', { car: currentCar });
+  if (tripBtn.disabled) return;
 
-  if (!data || !data.ok) {
-    if (vehicleModalTitle) vehicleModalTitle.textContent = '車輛提醒';
-    if (vehicleModalContent) {
-      vehicleModalContent.textContent = `🚚 ${currentCar}
-
-查無車輛資料`;
-    }
-    openVehicleModal();
-    return;
-  }
-
-  let maintainColor = '';
-  let inspectColor = '';
-
-  if (data.maintRemain !== null && data.maintRemain <= 7) {
-    maintainColor = '⚠️';
-  }
-
-  if (data.inspectionRemain !== null && data.inspectionRemain <= 30) {
-    inspectColor = '🚨';
-  }
-
-  const maintainText = `
-${maintainColor} 保養提醒
-上次保養：${data.lastMaintainDate || '-'}
-下次保養：${data.maintainDueDate || '-'}
-剩餘：${data.maintRemain ?? '-'} 天
-`;
-
-  const inspectText = `
-${inspectColor} 驗車提醒
-上次驗車：${data.lastInspectionDate || '-'}
-驗車期限：${data.inspectionDueDate || '-'}
-剩餘：${data.inspectionRemain ?? '-'} 天
-`;
-
-  if (vehicleModalTitle) vehicleModalTitle.textContent = `🚚 ${currentCar}`;
-  if (vehicleModalContent) vehicleModalContent.textContent = maintainText + inspectText;
-
-  openVehicleModal();
-}
-
-async function submitTrip() {
-  if (tripBtn && tripBtn.disabled) return;
-
-  const route = routeSelect ? routeSelect.value : '';
-  const area = areaSelect ? areaSelect.value : '';
-  const note = noteInput ? noteInput.value.trim() : '';
-
-  if (!currentLineId) {
-    setMsg('尚未取得 LINE 身分');
-    return;
-  }
-
-  if (!currentDriverName) {
-    setMsg('尚未綁定司機');
-    return;
-  }
+  const route = routeSelect.value;
+  const area = areaSelect.value;
+  const note = noteInput.value.trim();
 
   if (!selectedType) {
     setMsg('請選任務');
@@ -397,106 +322,135 @@ async function submitTrip() {
     return;
   }
 
-  if (tripBtn) tripBtn.disabled = true;
+  tripBtn.disabled = true;
 
-  const finalRoute = selectedType === '區域司機' ? area : route;
-  const finalNote = selectedType === '區域司機' ? '' : note;
+  const finalRoute =
+    selectedType === '區域司機'
+      ? area
+      : route;
 
-  showLoading('出車送出中...');
+  const finalNote =
+    selectedType === '區域司機'
+      ? ''
+      : note;
 
-  const result = await api('logTrip', {
-    lineId: currentLineId,
-    name: currentDriverName,
-    car: currentCar,
-    type: selectedType,
-    route: finalRoute,
-    note: finalNote
-  });
+  setMsg('');
+
+  showLoading('🚚 出車送出中...');
+
+  const result = await api(
+    'logTrip',
+    {
+      lineId: currentLineId,
+      name: currentDriverName,
+      car: currentCar,
+      type: selectedType,
+      route: finalRoute,
+      note: finalNote
+    }
+  );
+
+  if (!result.ok) {
+
+    hideLoading();
+
+    setMsg('出車失敗');
+
+    tripBtn.disabled = false;
+
+    return;
+
+  }
+
+  tripBtn.textContent = '✓ 出車成功';
+
+  tripBtn.style.background = '#22c55e';
+
+  showLoading('✓ 出車成功\n\n檢查車輛狀態...');
+
+  await new Promise(resolve => setTimeout(resolve, 1200));
+
+  await showVehicleStatus();
 
   hideLoading();
 
-  if (!result || !result.ok) {
-    setMsg(result && result.message ? result.message : '出車失敗');
-    if (tripBtn) tripBtn.disabled = false;
+};
+
+async function showVehicleStatus() {
+
+  const data = await api(
+    'getVehicleStatus',
+    { car: currentCar }
+  );
+
+  if (!data.ok) {
+
+    vehicleModalTitle.textContent = '車輛提醒';
+
+    vehicleModalContent.textContent =
+      '查無車輛資料';
+
+    openVehicleModal();
+
     return;
+
   }
 
-  if (tripBtn) {
-    tripBtn.textContent = '✓ 出車成功';
-    tripBtn.style.background = '#22c55e';
-  }
+  const maintainText = `
+保養提醒
+上次保養：${data.lastMaintainDate}
+下次保養：${data.maintainDueDate}
+剩餘：${data.maintRemain} 天
+`;
 
-  await showVehicleStatus();
+  const inspectText = `
+驗車提醒
+上次驗車：${data.lastInspectionDate}
+驗車期限：${data.inspectionDueDate}
+剩餘：${data.inspectionRemain} 天
+`;
+
+  vehicleModalTitle.textContent =
+    `🚚 ${currentCar}`;
+
+  vehicleModalContent.textContent =
+    maintainText + inspectText;
+
+  openVehicleModal();
+
 }
 
-async function completeMaintain() {
+maintBtn.onclick = async () => {
+
   const yes = confirm(`確認已完成保養？\n${currentCar}`);
+
   if (!yes) return;
 
-  await api('completeMaintain', { car: currentCar });
-  await showVehicleStatus();
-}
+  await api(
+    'completeMaintain',
+    { car: currentCar }
+  );
 
-async function completeInspection() {
+  await showVehicleStatus();
+
+};
+
+inspectBtn.onclick = async () => {
+
   const yes = confirm(`確認已完成驗車？\n${currentCar}`);
+
   if (!yes) return;
 
-  await api('completeInspection', { car: currentCar });
+  await api(
+    'completeInspection',
+    { car: currentCar }
+  );
+
   await showVehicleStatus();
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-  carText = document.getElementById('carText');
-  driverNameText = document.getElementById('driverNameText');
+};
 
-  bindArea = document.getElementById('bindArea');
-  nameInput = document.getElementById('nameInput');
-  bindBtn = document.getElementById('bindBtn');
-
-  tripArea = document.getElementById('tripArea');
-
-  routeBlock = document.getElementById('routeBlock');
-  routeSelect = document.getElementById('routeSelect');
-
-  areaBlock = document.getElementById('areaBlock');
-  areaSelect = document.getElementById('areaSelect');
-
-  noteArea = document.getElementById('noteArea');
-  noteInput = document.getElementById('noteInput');
-
-  tripBtn = document.getElementById('tripBtn');
-  msg = document.getElementById('msg');
-
-  loadingMask = document.getElementById('loadingMask');
-  loadingText = document.getElementById('loadingText');
-
-  vehicleModal = document.getElementById('vehicleModal');
-  vehicleModalTitle = document.getElementById('vehicleModalTitle');
-  vehicleModalContent = document.getElementById('vehicleModalContent');
-  maintBtn = document.getElementById('maintBtn');
-  inspectBtn = document.getElementById('inspectBtn');
-  closeVehicleModalBtn = document.getElementById('closeVehicleModalBtn');
-
-  if (closeVehicleModalBtn) {
-    closeVehicleModalBtn.onclick = () => closeVehicleModal();
-  }
-
-  if (bindBtn) {
-    bindBtn.onclick = () => bindDriver();
-  }
-
-  if (tripBtn) {
-    tripBtn.onclick = () => submitTrip();
-  }
-
-  if (maintBtn) {
-    maintBtn.onclick = () => completeMaintain();
-  }
-
-  if (inspectBtn) {
-    inspectBtn.onclick = () => completeInspection();
-  }
-
-  bindTaskButtons();
-  init();
-});
+document.addEventListener(
+  'DOMContentLoaded',
+  init
+);
