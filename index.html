@@ -5,6 +5,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
+<!-- ⭐ 防快取（關鍵） -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
 <title>聯群物流出車</title>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -232,59 +237,32 @@ input,select{
     選擇任務
   </div>
 
-  <button class="task-btn" data-type="常溫">
-    常溫配送
-  </button>
-
-  <button class="task-btn" data-type="低溫">
-    低溫配送
-  </button>
-
-  <button class="task-btn" data-type="爆量專車">
-    爆量專車 / 文流
-  </button>
-
-  <button class="task-btn" data-type="專車">
-    專車
-  </button>
-
-  <button class="task-btn" data-type="區域司機">
-    區域司機
-  </button>
+  <button class="task-btn" data-type="常溫">常溫配送</button>
+  <button class="task-btn" data-type="低溫">低溫配送</button>
+  <button class="task-btn" data-type="爆量專車">爆量專車 / 文流</button>
+  <button class="task-btn" data-type="專車">專車</button>
+  <button class="task-btn" data-type="區域司機">區域司機</button>
 
 
   <div id="routeBlock" class="hidden" style="margin-top:14px;">
-
     路線
-
     <select id="routeSelect">
-      <option value="">
-        請選擇路線
-      </option>
+      <option value="">請選擇路線</option>
     </select>
-
   </div>
 
 
   <div id="areaBlock" class="hidden" style="margin-top:14px;">
-
     區域
-
     <select id="areaSelect">
-      <option value="">
-        請選擇區域
-      </option>
+      <option value="">請選擇區域</option>
     </select>
-
   </div>
 
 
   <div id="noteArea" class="hidden" style="margin-top:14px;">
-
     備註
-
     <input id="noteInput" placeholder="例如：楊梅專車">
-
   </div>
 
 
@@ -298,11 +276,7 @@ input,select{
 
 
 <div id="loadingMask" class="loading-mask hidden">
-
-  <div class="loading-box" id="loadingText">
-    讀取中...
-  </div>
-
+  <div class="loading-box" id="loadingText">讀取中...</div>
 </div>
 
 
@@ -314,27 +288,19 @@ input,select{
       車輛提醒
     </div>
 
-    <div id="vehicleModalContent" class="status-box">
-    </div>
+    <div id="vehicleModalContent" class="status-box"></div>
 
-    <button id="maintBtn" class="sub-btn">
-      保養已完成
-    </button>
-
-    <button id="inspectBtn" class="sub-btn">
-      驗車已完成
-    </button>
-
-    <button id="closeVehicleModalBtn" class="primary">
-      知道了
-    </button>
+    <button id="maintBtn" class="sub-btn">保養已完成</button>
+    <button id="inspectBtn" class="sub-btn">驗車已完成</button>
+    <button id="closeVehicleModalBtn" class="primary">知道了</button>
 
   </div>
 
 </div>
 
 
-<script src="app.js?v=2"></script>
+<!-- ⭐ 強制每次載入最新JS -->
+<script src="app.js?v=20260317"></script>
 
 </body>
 </html>
