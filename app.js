@@ -84,7 +84,6 @@ const url=new URL(window.location.href);
 car=url.searchParams.get('car');
 
 /* 2 hash */
-
 if(!car){
 
 const hash=window.location.hash;
@@ -92,7 +91,6 @@ const hash=window.location.hash;
 if(hash && hash.includes('car=')){
 
 const params=new URLSearchParams(hash.replace('#',''));
-
 car=params.get('car');
 
 }
@@ -100,7 +98,6 @@ car=params.get('car');
 }
 
 /* 3 localStorage */
-
 if(!car){
 car=localStorage.getItem('car');
 }
@@ -109,6 +106,7 @@ if(car){
 
 car=car.trim().toUpperCase();
 
+/* ⭐ 修正：一定要先寫入 */
 localStorage.setItem('car',car);
 
 }
@@ -137,15 +135,10 @@ const text=await res.text();
 console.log('API response:',text);
 
 try{
-
 return JSON.parse(text);
-
 }catch(err){
-
 console.error('JSON parse error');
-
 throw new Error('API response not JSON');
-
 }
 
 }
@@ -163,32 +156,23 @@ let list=[];
 if(type==='爆量專車'){
 
 list=routesData.filter(r=>{
-
 const t=String(r.type||'').trim();
-
 return t==='爆量專車'||t==='文流';
-
 });
 
 }else{
 
 list=routesData.filter(r=>{
-
 return String(r.type||'').trim()===type;
-
 });
 
 }
 
 list.forEach(r=>{
-
 const opt=document.createElement('option');
-
 opt.value=r.name;
 opt.textContent=r.name;
-
 routeSelect.appendChild(opt);
-
 });
 
 }
@@ -199,14 +183,10 @@ function renderAreas(){
 areaSelect.innerHTML='<option value="">請選擇區域</option>';
 
 areasData.forEach(area=>{
-
 const opt=document.createElement('option');
-
 opt.value=area;
 opt.textContent=area;
-
 areaSelect.appendChild(opt);
-
 });
 
 }
@@ -232,22 +212,17 @@ areaBlock.classList.add('hidden');
 noteArea.classList.add('hidden');
 
 if(selectedType==='專車'){
-
 noteArea.classList.remove('hidden');
 return;
-
 }
 
 if(selectedType==='區域司機'){
-
 areaBlock.classList.remove('hidden');
 renderAreas();
 return;
-
 }
 
 routeBlock.classList.remove('hidden');
-
 renderRoutesByType(selectedType);
 
 };
@@ -269,7 +244,6 @@ currentCar=getCar();
 if(!currentCar){
 
 carText.textContent='沒有取得車號';
-
 hideLoading();
 return;
 
@@ -278,15 +252,19 @@ return;
 carText.textContent=currentCar;
 
 
-/* LIFF init */
+/* ⭐ 修正：先鎖車號（避免 login 吃掉） */
+localStorage.setItem('car',currentCar);
 
+
+/* LIFF init */
 await liff.init({liffId:LIFF_ID});
 
 
 if(!liff.isLoggedIn()){
 
 liff.login({
-redirectUri:window.location.href
+/* ⭐ 核心修正（唯一必要） */
+redirectUri: window.location.origin + window.location.pathname
 });
 
 return;
@@ -299,17 +277,13 @@ return;
 let profile;
 
 try{
-
 profile=await liff.getProfile();
-
 }catch(err){
 
 console.error('getProfile failed',err);
 
 driverNameText.textContent='LINE登入失敗';
-
 hideLoading();
-
 return;
 
 }
@@ -355,7 +329,6 @@ hideLoading();
 console.error(err);
 
 driverNameText.textContent='司機讀取失敗';
-
 hideLoading();
 
 }
@@ -371,28 +344,22 @@ bindBtn.onclick=async()=>{
 const name=nameInput.value.trim();
 
 if(!name){
-
 setMsg('請輸入姓名');
 return;
-
 }
 
 showLoading('綁定司機...');
 
 const result=await api('bindDriver',{
-
 lineId:currentLineId,
 name
-
 });
 
 hideLoading();
 
 if(!result.ok){
-
 setMsg('綁定失敗');
 return;
-
 }
 
 currentDriverName=name;
@@ -417,31 +384,23 @@ const area=areaSelect.value;
 const note=noteInput.value.trim();
 
 if(!selectedType){
-
 setMsg('請選任務');
 return;
-
 }
 
 if(selectedType==='區域司機'&&!area){
-
 setMsg('請選區域');
 return;
-
 }
 
 if(selectedType!=='專車'&&selectedType!=='區域司機'&&!route){
-
 setMsg('請選路線');
 return;
-
 }
 
 if(selectedType==='專車'&&!note){
-
 setMsg('請填備註');
 return;
-
 }
 
 tripBtn.disabled=true;
@@ -471,11 +430,8 @@ note:finalNote
 if(!result.ok){
 
 hideLoading();
-
 setMsg('出車失敗');
-
 tripBtn.disabled=false;
-
 return;
 
 }
@@ -505,9 +461,7 @@ async function showVehicleStatus(){
 
 const data=await api('getVehicleStatus',{car:currentCar});
 
-
 vehicleModalTitle.textContent='🚚 '+currentCar;
-
 
 vehicleModalContent.textContent=
 
@@ -520,7 +474,6 @@ vehicleModalContent.textContent=
 上次驗車：${data.lastInspectionDate}
 驗車期限：${data.inspectionDueDate}
 剩餘：${data.inspectionRemain}天`;
-
 
 maintBtn.style.display='inline-block';
 inspectBtn.style.display='inline-block';
