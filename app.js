@@ -47,6 +47,45 @@ const closeVehicleModalBtn=document.getElementById('closeVehicleModalBtn');
 
 
 /***********************
+⭐ 強制補抓 car（解 LINE / iOS 掉參數）
+***********************/
+(function(){
+
+try{
+
+const full = window.location.href;
+
+let match = full.match(/[?&]car=([^&#]+)/);
+
+if(!match){
+match = full.match(/#car=([^&#]+)/);
+}
+
+if(match && match[1]){
+
+let c = match[1];
+
+try{
+c = decodeURIComponent(c);
+}catch(e){}
+
+c = c.trim().toUpperCase();
+
+/* ⭐ 提前寫入 */
+localStorage.setItem('car', c);
+
+console.log('強制寫入car:', c);
+
+}
+
+}catch(e){
+console.warn('car parse error', e);
+}
+
+})();
+
+
+/***********************
 UI helpers
 ***********************/
 function setMsg(t){
@@ -102,7 +141,6 @@ car=localStorage.getItem('car');
 
 if(car){
 
-/* ⭐ Android修正 */
 try{
 car = decodeURIComponent(car);
 }catch(e){}
@@ -244,12 +282,12 @@ await liff.init({liffId:LIFF_ID});
 
 if(!liff.isLoggedIn()){
 liff.login({
-redirectUri: window.location.origin + window.location.pathname
+redirectUri: window.location.href  // ⭐ 修正
 });
 return;
 }
 
-/* ⭐ fallback */
+/* fallback */
 let profile;
 
 try{
@@ -430,7 +468,7 @@ openVehicleModal();
 
 
 /***********************
-⭐ 新增：三個按鈕
+按鈕
 ***********************/
 maintBtn.onclick=async()=>{
 
