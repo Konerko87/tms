@@ -1,575 +1,536 @@
 const LIFF_ID = '2008915809-vp9PFMVX';
 
 const GAS_API_URL =
-  'https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec';
+'https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec';
 
-let currentCar = '';
-let currentLineId = '';
-let currentDriverName = '';
-let selectedType = '';
 
-let routesData = [];
-let areasData = [];
+let currentCar='';
+let currentLineId='';
+let currentDriverName='';
+let selectedType='';
 
-const carText = document.getElementById('carText');
-const driverNameText = document.getElementById('driverNameText');
+let routesData=[];
+let areasData=[];
 
-const bindArea = document.getElementById('bindArea');
-const nameInput = document.getElementById('nameInput');
-const bindBtn = document.getElementById('bindBtn');
 
-const tripArea = document.getElementById('tripArea');
+const carText=document.getElementById('carText');
+const driverNameText=document.getElementById('driverNameText');
 
-const routeBlock = document.getElementById('routeBlock');
-const routeSelect = document.getElementById('routeSelect');
+const bindArea=document.getElementById('bindArea');
+const nameInput=document.getElementById('nameInput');
+const bindBtn=document.getElementById('bindBtn');
 
-const areaBlock = document.getElementById('areaBlock');
-const areaSelect = document.getElementById('areaSelect');
+const tripArea=document.getElementById('tripArea');
 
-const noteArea = document.getElementById('noteArea');
-const noteInput = document.getElementById('noteInput');
+const routeBlock=document.getElementById('routeBlock');
+const routeSelect=document.getElementById('routeSelect');
 
-const tripBtn = document.getElementById('tripBtn');
-const msg = document.getElementById('msg');
+const areaBlock=document.getElementById('areaBlock');
+const areaSelect=document.getElementById('areaSelect');
 
-const loadingMask = document.getElementById('loadingMask');
-const loadingText = document.getElementById('loadingText');
+const noteArea=document.getElementById('noteArea');
+const noteInput=document.getElementById('noteInput');
 
-const vehicleModal = document.getElementById('vehicleModal');
-const vehicleModalTitle = document.getElementById('vehicleModalTitle');
-const vehicleModalContent = document.getElementById('vehicleModalContent');
+const tripBtn=document.getElementById('tripBtn');
+const msg=document.getElementById('msg');
 
-const maintBtn = document.getElementById('maintBtn');
-const inspectBtn = document.getElementById('inspectBtn');
-const closeVehicleModalBtn = document.getElementById('closeVehicleModalBtn');
+const loadingMask=document.getElementById('loadingMask');
+const loadingText=document.getElementById('loadingText');
 
-/***********************
- UI helpers
-***********************/
-function setMsg(t) {
-  msg.textContent = t || '';
-}
+const vehicleModal=document.getElementById('vehicleModal');
+const vehicleModalTitle=document.getElementById('vehicleModalTitle');
+const vehicleModalContent=document.getElementById('vehicleModalContent');
 
-function showLoading(text = '讀取中...') {
-  loadingText.innerHTML = text;
-  loadingMask.classList.remove('hidden');
-}
+const maintBtn=document.getElementById('maintBtn');
+const inspectBtn=document.getElementById('inspectBtn');
+const closeVehicleModalBtn=document.getElementById('closeVehicleModalBtn');
 
-function hideLoading() {
-  loadingMask.classList.add('hidden');
-}
-
-function openVehicleModal() {
-  vehicleModal.classList.remove('hidden');
-}
-
-function closeVehicleModal() {
-  vehicleModal.classList.add('hidden');
-}
 
 /***********************
- 車號取得
+UI helpers
 ***********************/
-function getCar() {
-
-  let car = '';
-
-  const url = new URL(window.location.href);
-
-  // 1. 抓 ?car=
-  car = url.searchParams.get('car');
-
-  // 2. 抓 #car=
-  if (!car) {
-    const hash = window.location.hash;
-
-    if (hash && hash.includes('car=')) {
-      const params = new URLSearchParams(hash.replace('#', ''));
-      car = params.get('car');
-    }
-  }
-
-  // 3. localStorage
-  if (!car) {
-    car = localStorage.getItem('car');
-  }
-
-  if (car) {
-    car = car.trim().toUpperCase();
-    localStorage.setItem('car', car);
-  }
-
-  return car || '';
+function setMsg(t){
+msg.textContent=t||'';
 }
+
+function showLoading(text='讀取中...'){
+loadingText.textContent=text;
+loadingMask.classList.remove('hidden');
+}
+
+function hideLoading(){
+loadingMask.classList.add('hidden');
+}
+
+function openVehicleModal(){
+vehicleModal.classList.remove('hidden');
+}
+
+function closeVehicleModal(){
+vehicleModal.classList.add('hidden');
+}
+
 
 /***********************
- API
+車號取得（穩定版）
 ***********************/
-async function api(action, payload = {}) {
-  const url =
-    GAS_API_URL +
-    '?action=' +
-    encodeURIComponent(action) +
-    '&' +
-    new URLSearchParams(payload).toString();
+function getCar(){
 
-  const res = await fetch(url);
-  const text = await res.text();
+let car='';
 
-  return JSON.parse(text);
+const url=new URL(window.location.href);
+
+/* 1 query */
+car=url.searchParams.get('car');
+
+/* 2 hash */
+
+if(!car){
+
+const hash=window.location.hash;
+
+if(hash && hash.includes('car=')){
+
+const params=new URLSearchParams(hash.replace('#',''));
+
+car=params.get('car');
+
 }
+
+}
+
+/* 3 localStorage */
+
+if(!car){
+car=localStorage.getItem('car');
+}
+
+if(car){
+
+car=car.trim().toUpperCase();
+
+localStorage.setItem('car',car);
+
+}
+
+return car||'';
+
+}
+
 
 /***********************
- 路線 / 區域
+API
 ***********************/
-function renderRoutesByType(type) {
-  routeSelect.innerHTML = '<option value="">請選擇路線</option>';
+async function api(action,payload={}){
 
-  let list = [];
+const url=
+GAS_API_URL+
+'?action='+
+encodeURIComponent(action)+
+'&'+
+new URLSearchParams(payload).toString();
 
-  if (type === '爆量專車') {
-    list = routesData.filter(r => {
-      const t = String(r.type || '').trim();
-      return t === '爆量專車' || t === '文流';
-    });
-  } else {
-    list = routesData.filter(r => {
-      return String(r.type || '').trim() === type;
-    });
-  }
+const res=await fetch(url);
 
-  list.forEach(r => {
-    const opt = document.createElement('option');
-    opt.value = r.name;
-    opt.textContent = r.name;
-    routeSelect.appendChild(opt);
-  });
+const text=await res.text();
+
+console.log('API response:',text);
+
+try{
+
+return JSON.parse(text);
+
+}catch(err){
+
+console.error('JSON parse error');
+
+throw new Error('API response not JSON');
+
 }
 
-function renderAreas() {
-  areaSelect.innerHTML = '<option value="">請選擇區域</option>';
-
-  areasData.forEach(area => {
-    const opt = document.createElement('option');
-    opt.value = area;
-    opt.textContent = area;
-    areaSelect.appendChild(opt);
-  });
 }
+
 
 /***********************
- 任務按鈕
+路線 / 區域
 ***********************/
-document.querySelectorAll('.task-btn').forEach(btn => {
-  btn.onclick = () => {
-    document
-      .querySelectorAll('.task-btn')
-      .forEach(b => b.classList.remove('selected-task'));
+function renderRoutesByType(type){
 
-    btn.classList.add('selected-task');
+routeSelect.innerHTML='<option value="">請選擇路線</option>';
 
-    selectedType = btn.dataset.type || '';
+let list=[];
 
-    routeBlock.classList.add('hidden');
-    areaBlock.classList.add('hidden');
-    noteArea.classList.add('hidden');
-    setMsg('');
+if(type==='爆量專車'){
 
-    if (selectedType === '專車') {
-      noteArea.classList.remove('hidden');
-      return;
-    }
+list=routesData.filter(r=>{
 
-    if (selectedType === '區域司機') {
-      areaBlock.classList.remove('hidden');
-      renderAreas();
-      return;
-    }
+const t=String(r.type||'').trim();
 
-    routeBlock.classList.remove('hidden');
-    renderRoutesByType(selectedType);
-  };
+return t==='爆量專車'||t==='文流';
+
 });
 
-/***********************
- 初始化
-***********************/
-async function init() {
-  try {
-    showLoading('登入中...');
+}else{
 
-    currentCar = getCar();
+list=routesData.filter(r=>{
 
-    if (!currentCar) {
-      carText.textContent = '沒有取得車號';
-      driverNameText.textContent = '-';
-      hideLoading();
-      return;
-    }
+return String(r.type||'').trim()===type;
 
-    carText.textContent = currentCar;
+});
 
-    await liff.init({ liffId: LIFF_ID });
-
-    if (!liff.isLoggedIn()) {
-      liff.login({
-        redirectUri: window.location.href
-      });
-      return;
-    }
-
-    const profile = await liff.getProfile();
-    currentLineId = String(profile.userId || '').trim();
-
-    showLoading('讀取資料...');
-
-    const initResult = await api('initData', { lineId: currentLineId });
-
-    routesData = initResult.routes || [];
-    areasData = initResult.areas || [];
-
-    const driver = initResult.driver || {};
-
-    if (driver.found) {
-      currentDriverName = driver.name;
-      driverNameText.textContent = currentDriverName;
-
-      bindArea.classList.add('hidden');
-      tripArea.classList.remove('hidden');
-    } else {
-      driverNameText.textContent = '未綁定';
-      bindArea.classList.remove('hidden');
-      tripArea.classList.add('hidden');
-    }
-
-    hideLoading();
-
-  } catch (err) {
-    console.error(err);
-    carText.textContent = currentCar || '沒有取得車號';
-    driverNameText.textContent = '讀取失敗';
-    setMsg('系統初始化失敗，請重開一次');
-    hideLoading();
-  }
 }
 
+list.forEach(r=>{
+
+const opt=document.createElement('option');
+
+opt.value=r.name;
+opt.textContent=r.name;
+
+routeSelect.appendChild(opt);
+
+});
+
+}
+
+
+function renderAreas(){
+
+areaSelect.innerHTML='<option value="">請選擇區域</option>';
+
+areasData.forEach(area=>{
+
+const opt=document.createElement('option');
+
+opt.value=area;
+opt.textContent=area;
+
+areaSelect.appendChild(opt);
+
+});
+
+}
+
+
 /***********************
- 綁定司機
+任務按鈕
 ***********************/
-bindBtn.onclick = async () => {
-  const name = nameInput.value.trim();
+document.querySelectorAll('.task-btn').forEach(btn=>{
 
-  if (!name) {
-    setMsg('請輸入姓名');
-    return;
-  }
+btn.onclick=()=>{
 
-  try {
-    setMsg('');
-    showLoading('綁定司機...');
+document
+.querySelectorAll('.task-btn')
+.forEach(b=>b.classList.remove('selected-task'));
 
-    const result = await api('bindDriver', {
-      lineId: currentLineId,
-      name
-    });
+btn.classList.add('selected-task');
 
-    hideLoading();
+selectedType=btn.dataset.type||'';
 
-    if (!result.ok) {
-      setMsg('綁定失敗');
-      return;
-    }
+routeBlock.classList.add('hidden');
+areaBlock.classList.add('hidden');
+noteArea.classList.add('hidden');
 
-    currentDriverName = name;
-    driverNameText.textContent = name;
+if(selectedType==='專車'){
 
-    bindArea.classList.add('hidden');
-    tripArea.classList.remove('hidden');
+noteArea.classList.remove('hidden');
+return;
 
-  } catch (err) {
-    console.error(err);
-    hideLoading();
-    setMsg('綁定失敗，請稍後再試');
-  }
+}
+
+if(selectedType==='區域司機'){
+
+areaBlock.classList.remove('hidden');
+renderAreas();
+return;
+
+}
+
+routeBlock.classList.remove('hidden');
+
+renderRoutesByType(selectedType);
+
 };
 
+});
+
+
 /***********************
- 出車
+初始化（穩定版）
 ***********************/
-tripBtn.onclick = async () => {
-  if (tripBtn.disabled) return;
+async function init(){
 
-  const route = routeSelect.value;
-  const area = areaSelect.value;
-  const note = noteInput.value.trim();
+try{
 
-  if (!selectedType) {
-    setMsg('請選任務');
-    return;
-  }
+showLoading('登入中...');
 
-  if (selectedType === '區域司機' && !area) {
-    setMsg('請選區域');
-    return;
-  }
+currentCar=getCar();
 
-  if (
-    selectedType !== '專車' &&
-    selectedType !== '區域司機' &&
-    !route
-  ) {
-    setMsg('請選路線');
-    return;
-  }
+if(!currentCar){
 
-  if (selectedType === '專車' && !note) {
-    setMsg('請填備註');
-    return;
-  }
+carText.textContent='沒有取得車號';
 
-  try {
-    setMsg('');
-    tripBtn.disabled = true;
+hideLoading();
+return;
 
-    const finalRoute =
-      selectedType === '區域司機' ? area : route;
+}
 
-    const finalNote =
-      selectedType === '區域司機' ? '' : note;
+carText.textContent=currentCar;
 
-    showLoading('🚚 出車送出中...');
 
-    const result = await api('logTrip', {
-      lineId: currentLineId,
-      name: currentDriverName,
-      car: currentCar,
-      type: selectedType,
-      route: finalRoute,
-      note: finalNote
-    });
+/* LIFF init */
 
-    if (!result.ok) {
-      hideLoading();
-      setMsg('出車失敗');
-      tripBtn.disabled = false;
-      return;
-    }
+await liff.init({liffId:LIFF_ID});
 
-    tripBtn.textContent = '✓ 出車成功';
 
-    showLoading('<div class="success-box">🚚 出車成功</div>');
+if(!liff.isLoggedIn()){
 
-    await new Promise(r => setTimeout(r, 1200));
+liff.login({
+redirectUri:window.location.href
+});
 
-    await showVehicleStatus();
+return;
 
-    hideLoading();
+}
 
-  } catch (err) {
-    console.error(err);
-    hideLoading();
-    setMsg('出車失敗，請稍後再試');
-    tripBtn.disabled = false;
-  }
+
+/* 防止 getProfile crash */
+
+let profile;
+
+try{
+
+profile=await liff.getProfile();
+
+}catch(err){
+
+console.error('getProfile failed',err);
+
+driverNameText.textContent='LINE登入失敗';
+
+hideLoading();
+
+return;
+
+}
+
+
+currentLineId=String(profile.userId||'').trim();
+
+
+showLoading('讀取資料...');
+
+
+const initResult=await api('initData',{lineId:currentLineId});
+
+
+routesData=initResult.routes||[];
+areasData=initResult.areas||[];
+
+const driver=initResult.driver||{};
+
+
+if(driver.found){
+
+currentDriverName=driver.name;
+
+driverNameText.textContent=currentDriverName;
+
+bindArea.classList.add('hidden');
+tripArea.classList.remove('hidden');
+
+}else{
+
+driverNameText.textContent='未綁定';
+
+bindArea.classList.remove('hidden');
+tripArea.classList.add('hidden');
+
+}
+
+hideLoading();
+
+}catch(err){
+
+console.error(err);
+
+driverNameText.textContent='司機讀取失敗';
+
+hideLoading();
+
+}
+
+}
+
+
+/***********************
+綁定司機
+***********************/
+bindBtn.onclick=async()=>{
+
+const name=nameInput.value.trim();
+
+if(!name){
+
+setMsg('請輸入姓名');
+return;
+
+}
+
+showLoading('綁定司機...');
+
+const result=await api('bindDriver',{
+
+lineId:currentLineId,
+name
+
+});
+
+hideLoading();
+
+if(!result.ok){
+
+setMsg('綁定失敗');
+return;
+
+}
+
+currentDriverName=name;
+
+driverNameText.textContent=name;
+
+bindArea.classList.add('hidden');
+tripArea.classList.remove('hidden');
+
 };
 
-/***********************
- 警示文字
-***********************/
-function getMaintainWarnText(remain) {
-  if (remain === null || remain === undefined || remain === '') return '';
-  if (remain < 0) return '🚨 已逾期';
-  if (remain <= 3) return '🚨 即將到期';
-  if (remain <= 10) return '⚠ 即將到期';
-  return '✅ 正常';
-}
-
-function getInspectionWarnText(remain) {
-  if (remain === null || remain === undefined || remain === '') return '';
-  if (remain < 0) return '🚨 已逾期';
-  if (remain <= 3) return '🚨 驗車即將到期';
-  if (remain <= 10) return '⚠ 驗車即將到期';
-  return '✅ 正常';
-}
-
-function applyVehicleModalStyle(data) {
-  vehicleModalContent.classList.remove('inspect-danger');
-  vehicleModalContent.classList.remove('maint-warning');
-
-  const maintRemain = Number(data.maintRemain);
-  const inspectionRemain = Number(data.inspectionRemain);
-
-  if (!Number.isNaN(inspectionRemain) && inspectionRemain <= 3) {
-    vehicleModalContent.classList.add('inspect-danger');
-    return;
-  }
-
-  if (!Number.isNaN(maintRemain) && maintRemain <= 10) {
-    vehicleModalContent.classList.add('maint-warning');
-  }
-}
 
 /***********************
- 車輛狀態
+出車
 ***********************/
-async function showVehicleStatus() {
-  const data = await api('getVehicleStatus', { car: currentCar });
+tripBtn.onclick=async()=>{
 
-  vehicleModalTitle.textContent = '🚚 ' + currentCar;
+if(tripBtn.disabled)return;
 
-  if (!data.ok) {
-    vehicleModalContent.className = 'status-box';
-    vehicleModalContent.textContent = '查無車輛維護資料';
-    maintBtn.style.display = 'none';
-    inspectBtn.style.display = 'none';
+const route=routeSelect.value;
+const area=areaSelect.value;
+const note=noteInput.value.trim();
 
-    closeVehicleModalBtn.textContent = '知道了';
-    closeVehicleModalBtn.onclick = showSafetyReminder;
+if(!selectedType){
 
-    openVehicleModal();
-    return;
-  }
+setMsg('請選任務');
+return;
 
-  const maintainWarn = getMaintainWarnText(data.maintRemain);
-  const inspectWarn = getInspectionWarnText(data.inspectionRemain);
-
-  vehicleModalContent.className = 'status-box';
-  applyVehicleModalStyle(data);
-
-  vehicleModalContent.textContent =
-`保養提醒 ${maintainWarn}
-上次保養：${data.lastMaintainDate || '-'}
-下次保養：${data.maintainDueDate || '-'}
-剩餘：${data.maintRemain ?? '-'}天
-
-驗車提醒 ${inspectWarn}
-上次驗車：${data.lastInspectionDate || '-'}
-驗車期限：${data.inspectionDueDate || '-'}
-剩餘：${data.inspectionRemain ?? '-'}天`;
-
-  maintBtn.style.display = 'inline-block';
-  inspectBtn.style.display = 'inline-block';
-
-  maintBtn.textContent = '保養已完成';
-  inspectBtn.textContent = '驗車已完成';
-
-  closeVehicleModalBtn.textContent = '知道了';
-  closeVehicleModalBtn.onclick = showSafetyReminder;
-
-  openVehicleModal();
 }
 
-/***********************
- 行車安全提醒
-***********************/
-function showSafetyReminder() {
-  vehicleModalTitle.textContent = '🚚 行車安全提醒';
-  vehicleModalContent.className = 'status-box';
+if(selectedType==='區域司機'&&!area){
 
-  vehicleModalContent.textContent =
-`1. 行車前檢查胎壓
-2. 煞車是否正常
-3. 貨物是否固定
-4. 遵守交通規則
-5. 保持安全車距
+setMsg('請選區域');
+return;
 
-祝您行車平安`;
-
-  maintBtn.style.display = 'none';
-  inspectBtn.style.display = 'none';
-
-  closeVehicleModalBtn.textContent = '我知道了';
-
-  closeVehicleModalBtn.onclick = () => {
-    try {
-      if (typeof liff !== 'undefined' && liff.isInClient()) {
-        liff.closeWindow();
-      } else {
-        window.location.href = 'about:blank';
-      }
-    } catch (err) {
-      window.location.href = 'about:blank';
-    }
-  };
 }
 
-/***********************
- 完成保養
-***********************/
-maintBtn.onclick = async () => {
-  const yes = confirm(`確認已完成保養？\n${currentCar}`);
-  if (!yes) return;
+if(selectedType!=='專車'&&selectedType!=='區域司機'&&!route){
 
-  try {
-    showLoading('更新保養資料...');
+setMsg('請選路線');
+return;
 
-    const result = await api('completeMaintain', { car: currentCar });
+}
 
-    hideLoading();
+if(selectedType==='專車'&&!note){
 
-    if (!result.ok) {
-      alert('更新保養資料失敗');
-      return;
-    }
+setMsg('請填備註');
+return;
 
-    vehicleModalTitle.textContent = '✓ 保養已完成';
-    vehicleModalContent.className = 'status-box';
-    vehicleModalContent.textContent = '保養資料已更新';
+}
 
-    maintBtn.style.display = 'none';
-    inspectBtn.style.display = 'inline-block';
-    inspectBtn.textContent = '我知道了';
-    inspectBtn.onclick = showSafetyReminder;
+tripBtn.disabled=true;
 
-    closeVehicleModalBtn.textContent = '我知道了';
-    closeVehicleModalBtn.onclick = showSafetyReminder;
+const finalRoute=
+selectedType==='區域司機'?area:route;
 
-  } catch (err) {
-    console.error(err);
-    hideLoading();
-    alert('更新保養資料失敗');
-  }
+const finalNote=
+selectedType==='區域司機'?'':note;
+
+
+showLoading('🚚 出車送出中...');
+
+
+const result=await api('logTrip',{
+
+lineId:currentLineId,
+name:currentDriverName,
+car:currentCar,
+type:selectedType,
+route:finalRoute,
+note:finalNote
+
+});
+
+
+if(!result.ok){
+
+hideLoading();
+
+setMsg('出車失敗');
+
+tripBtn.disabled=false;
+
+return;
+
+}
+
+
+tripBtn.textContent='✓ 出車成功';
+
+
+showLoading('✓ 出車成功\n\n檢查車輛狀態...');
+
+
+await new Promise(r=>setTimeout(r,1200));
+
+
+await showVehicleStatus();
+
+
+hideLoading();
+
 };
 
-/***********************
- 完成驗車
-***********************/
-inspectBtn.onclick = async () => {
-  const yes = confirm(`確認已完成驗車？\n${currentCar}`);
-  if (!yes) return;
-
-  try {
-    showLoading('更新驗車資料...');
-
-    const result = await api('completeInspection', { car: currentCar });
-
-    hideLoading();
-
-    if (!result.ok) {
-      alert('更新驗車資料失敗');
-      return;
-    }
-
-    vehicleModalTitle.textContent = '✓ 驗車已完成';
-    vehicleModalContent.className = 'status-box';
-    vehicleModalContent.textContent = '驗車資料已更新';
-
-    inspectBtn.style.display = 'none';
-    maintBtn.style.display = 'inline-block';
-    maintBtn.textContent = '我知道了';
-    maintBtn.onclick = showSafetyReminder;
-
-    closeVehicleModalBtn.textContent = '我知道了';
-    closeVehicleModalBtn.onclick = showSafetyReminder;
-
-  } catch (err) {
-    console.error(err);
-    hideLoading();
-    alert('更新驗車資料失敗');
-  }
-};
 
 /***********************
- Start
+車輛狀態
 ***********************/
-document.addEventListener('DOMContentLoaded', init);
+async function showVehicleStatus(){
+
+const data=await api('getVehicleStatus',{car:currentCar});
+
+
+vehicleModalTitle.textContent='🚚 '+currentCar;
+
+
+vehicleModalContent.textContent=
+
+`保養提醒
+上次保養：${data.lastMaintainDate}
+下次保養：${data.maintainDueDate}
+剩餘：${data.maintRemain}天
+
+驗車提醒
+上次驗車：${data.lastInspectionDate}
+驗車期限：${data.inspectionDueDate}
+剩餘：${data.inspectionRemain}天`;
+
+
+maintBtn.style.display='inline-block';
+inspectBtn.style.display='inline-block';
+
+openVehicleModal();
+
+}
+
+
+/***********************
+Start
+***********************/
+document.addEventListener('DOMContentLoaded',init);
