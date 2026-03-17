@@ -4,21 +4,26 @@
 <meta charset="utf-8">
 <title>Loading...</title>
 </head>
+
 <body>
 
 <script>
 
+/* ⭐ debug：先看網址 */
+document.body.innerText = window.location.href;
+
+/* ⭐ 正常流程 */
 const params = new URLSearchParams(location.search);
 const car = params.get('car');
 
 if(!car){
-document.body.innerText = '車號錯誤';
+
+document.body.innerText = '錯誤：沒有車號';
+
 }else{
 
-/* ⭐ 你的 LIFF 網址 */
 const LIFF_URL = 'https://你的LIFF網址/index.html';
 
-/* ⭐ 雙保險帶入 */
 location.replace(
 LIFF_URL +
 '?car=' + encodeURIComponent(car) +
