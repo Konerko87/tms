@@ -1,35 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>Loading...</title>
-</head>
-<body>
-
 <script>
-
 const params = new URLSearchParams(location.search);
-const car = params.get('car');
+let car = params.get('car');
 
-if(!car){
+if (!car) {
   document.body.innerText = '錯誤：沒有車號';
-}else{
+} else {
 
-  /* ⭐ 存 localStorage（超關鍵） */
+  try {
+    car = decodeURIComponent(car);
+  } catch(e){}
+
+  car = car.trim().toUpperCase();
+
+  /* ⭐ 雙寫入（關鍵） */
   localStorage.setItem('car', car);
+  sessionStorage.setItem('car', car);
 
   const LIFF_URL = 'https://liff.line.me/2008915809-vp9PFMVX';
 
-  /* ⭐ 三重保險 */
+  /* ⭐ 這裡也要 encode */
+  const encoded = encodeURIComponent(car);
+
   location.replace(
     LIFF_URL +
-    '?car=' + encodeURIComponent(car) +
-    '#car=' + encodeURIComponent(car)
+    '?car=' + encoded +
+    '#car=' + encoded
   );
-
 }
-
 </script>
-
-</body>
-</html>
