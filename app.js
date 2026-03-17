@@ -105,8 +105,6 @@ car=localStorage.getItem('car');
 if(car){
 
 car=car.trim().toUpperCase();
-
-/* ⭐ 修正：一定要先寫入 */
 localStorage.setItem('car',car);
 
 }
@@ -129,7 +127,6 @@ encodeURIComponent(action)+
 new URLSearchParams(payload).toString();
 
 const res=await fetch(url);
-
 const text=await res.text();
 
 console.log('API response:',text);
@@ -251,8 +248,7 @@ return;
 
 carText.textContent=currentCar;
 
-
-/* ⭐ 修正：先鎖車號（避免 login 吃掉） */
+/* 保險鎖車號 */
 localStorage.setItem('car',currentCar);
 
 
@@ -263,7 +259,6 @@ await liff.init({liffId:LIFF_ID});
 if(!liff.isLoggedIn()){
 
 liff.login({
-/* ⭐ 核心修正（唯一必要） */
 redirectUri: window.location.origin + window.location.pathname
 });
 
@@ -272,15 +267,26 @@ return;
 }
 
 
-/* 防止 getProfile crash */
+/* ⭐⭐⭐ 核心修復：getProfile fallback ⭐⭐⭐ */
 
 let profile;
 
 try{
-profile=await liff.getProfile();
+
+profile = await liff.getProfile();
+currentLineId = String(profile.userId || '').trim();
+
 }catch(err){
 
-console.error('getProfile failed',err);
+console.warn('getProfile失敗 → 改用IDToken');
+
+const idToken = liff.getDecodedIDToken();
+
+if(idToken && idToken.sub){
+
+currentLineId = String(idToken.sub).trim();
+
+}else{
 
 driverNameText.textContent='LINE登入失敗';
 hideLoading();
@@ -288,15 +294,14 @@ return;
 
 }
 
+}
 
-currentLineId=String(profile.userId||'').trim();
 
+/* 讀資料 */
 
 showLoading('讀取資料...');
 
-
 const initResult=await api('initData',{lineId:currentLineId});
-
 
 routesData=initResult.routes||[];
 areasData=initResult.areas||[];
@@ -307,7 +312,6 @@ const driver=initResult.driver||{};
 if(driver.found){
 
 currentDriverName=driver.name;
-
 driverNameText.textContent=currentDriverName;
 
 bindArea.classList.add('hidden');
@@ -363,7 +367,6 @@ return;
 }
 
 currentDriverName=name;
-
 driverNameText.textContent=name;
 
 bindArea.classList.add('hidden');
@@ -414,7 +417,6 @@ selectedType==='區域司機'?'':note;
 
 showLoading('🚚 出車送出中...');
 
-
 const result=await api('logTrip',{
 
 lineId:currentLineId,
@@ -426,7 +428,6 @@ note:finalNote
 
 });
 
-
 if(!result.ok){
 
 hideLoading();
@@ -436,18 +437,13 @@ return;
 
 }
 
-
 tripBtn.textContent='✓ 出車成功';
-
 
 showLoading('✓ 出車成功\n\n檢查車輛狀態...');
 
-
 await new Promise(r=>setTimeout(r,1200));
 
-
 await showVehicleStatus();
-
 
 hideLoading();
 
