@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Loading...</title>
+</head>
+<body>
+
+<script>
+
+const params = new URLSearchParams(location.search);
+const car = params.get('car');
+
+if(!car){
+document.body.innerText = '車號錯誤';
+}else{
+
+/* ⭐ 你的 LIFF 網址 */
+const LIFF_URL = 'https://你的LIFF網址/index.html';
+
+/* ⭐ 雙保險帶入 */
+location.replace(
+LIFF_URL +
+'?car=' + encodeURIComponent(car) +
+'#car=' + encodeURIComponent(car)
+);
+
+}
+
+</script>
+
+</body>
+</html>
