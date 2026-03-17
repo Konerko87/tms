@@ -72,7 +72,7 @@ vehicleModal.classList.add('hidden');
 
 
 /***********************
-車號取得（穩定版）
+車號取得（Android強化）
 ***********************/
 function getCar(){
 
@@ -89,10 +89,8 @@ if(!car){
 const hash=window.location.hash;
 
 if(hash && hash.includes('car=')){
-
 const params=new URLSearchParams(hash.replace('#',''));
 car=params.get('car');
-
 }
 
 }
@@ -103,6 +101,11 @@ car=localStorage.getItem('car');
 }
 
 if(car){
+
+/* ⭐ Android修正 */
+try{
+car = decodeURIComponent(car);
+}catch(e){}
 
 car=car.trim().toUpperCase();
 localStorage.setItem('car',car);
@@ -131,12 +134,7 @@ const text=await res.text();
 
 console.log('API response:',text);
 
-try{
 return JSON.parse(text);
-}catch(err){
-console.error('JSON parse error');
-throw new Error('API response not JSON');
-}
 
 }
 
@@ -151,18 +149,14 @@ routeSelect.innerHTML='<option value="">請選擇路線</option>';
 let list=[];
 
 if(type==='爆量專車'){
-
 list=routesData.filter(r=>{
 const t=String(r.type||'').trim();
 return t==='爆量專車'||t==='文流';
 });
-
 }else{
-
 list=routesData.filter(r=>{
 return String(r.type||'').trim()===type;
 });
-
 }
 
 list.forEach(r=>{
@@ -228,7 +222,7 @@ renderRoutesByType(selectedType);
 
 
 /***********************
-初始化（穩定版）
+初始化
 ***********************/
 async function init(){
 
@@ -239,65 +233,32 @@ showLoading('登入中...');
 currentCar=getCar();
 
 if(!currentCar){
-
 carText.textContent='沒有取得車號';
 hideLoading();
 return;
-
 }
 
 carText.textContent=currentCar;
 
-/* 保險鎖車號 */
-localStorage.setItem('car',currentCar);
-
-
-/* LIFF init */
 await liff.init({liffId:LIFF_ID});
 
-
 if(!liff.isLoggedIn()){
-
 liff.login({
 redirectUri: window.location.origin + window.location.pathname
 });
-
 return;
-
 }
 
-
-/* ⭐⭐⭐ 核心修復：getProfile fallback ⭐⭐⭐ */
-
+/* ⭐ fallback */
 let profile;
 
 try{
-
-profile = await liff.getProfile();
-currentLineId = String(profile.userId || '').trim();
-
+profile=await liff.getProfile();
+currentLineId=profile.userId;
 }catch(err){
-
-console.warn('getProfile失敗 → 改用IDToken');
-
-const idToken = liff.getDecodedIDToken();
-
-if(idToken && idToken.sub){
-
-currentLineId = String(idToken.sub).trim();
-
-}else{
-
-driverNameText.textContent='LINE登入失敗';
-hideLoading();
-return;
-
+const idToken=liff.getDecodedIDToken();
+currentLineId=idToken.sub;
 }
-
-}
-
-
-/* 讀資料 */
 
 showLoading('讀取資料...');
 
@@ -307,7 +268,6 @@ routesData=initResult.routes||[];
 areasData=initResult.areas||[];
 
 const driver=initResult.driver||{};
-
 
 if(driver.found){
 
@@ -331,7 +291,6 @@ hideLoading();
 }catch(err){
 
 console.error(err);
-
 driverNameText.textContent='司機讀取失敗';
 hideLoading();
 
@@ -414,34 +373,29 @@ selectedType==='區域司機'?area:route;
 const finalNote=
 selectedType==='區域司機'?'':note;
 
-
 showLoading('🚚 出車送出中...');
 
 const result=await api('logTrip',{
-
 lineId:currentLineId,
 name:currentDriverName,
 car:currentCar,
 type:selectedType,
 route:finalRoute,
 note:finalNote
-
 });
 
 if(!result.ok){
-
 hideLoading();
 setMsg('出車失敗');
 tripBtn.disabled=false;
 return;
-
 }
 
 tripBtn.textContent='✓ 出車成功';
 
-showLoading('✓ 出車成功\n\n檢查車輛狀態...');
+showLoading('檢查車輛狀態...');
 
-await new Promise(r=>setTimeout(r,1200));
+await new Promise(r=>setTimeout(r,1000));
 
 await showVehicleStatus();
 
@@ -460,7 +414,6 @@ const data=await api('getVehicleStatus',{car:currentCar});
 vehicleModalTitle.textContent='🚚 '+currentCar;
 
 vehicleModalContent.textContent=
-
 `保養提醒
 上次保養：${data.lastMaintainDate}
 下次保養：${data.maintainDueDate}
@@ -471,12 +424,55 @@ vehicleModalContent.textContent=
 驗車期限：${data.inspectionDueDate}
 剩餘：${data.inspectionRemain}天`;
 
-maintBtn.style.display='inline-block';
-inspectBtn.style.display='inline-block';
-
 openVehicleModal();
 
 }
+
+
+/***********************
+⭐ 新增：三個按鈕
+***********************/
+maintBtn.onclick=async()=>{
+
+if(!confirm('確認已完成保養？'))return;
+
+showLoading('更新保養...');
+
+await api('completeMaintain',{car:currentCar});
+
+hideLoading();
+
+alert('保養完成');
+closeVehicleModal();
+
+};
+
+inspectBtn.onclick=async()=>{
+
+if(!confirm('確認已完成驗車？'))return;
+
+showLoading('更新驗車...');
+
+await api('completeInspection',{car:currentCar});
+
+hideLoading();
+
+alert('驗車完成');
+closeVehicleModal();
+
+};
+
+closeVehicleModalBtn.onclick=()=>{
+
+closeVehicleModal();
+
+if(window.liff){
+liff.closeWindow();
+}else{
+window.close();
+}
+
+};
 
 
 /***********************
