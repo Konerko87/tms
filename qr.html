@@ -4,31 +4,28 @@
 <meta charset="utf-8">
 <title>Loading...</title>
 </head>
-
 <body>
 
 <script>
 
-/* ⭐ debug：先看網址 */
-document.body.innerText = window.location.href;
-
-/* ⭐ 正常流程 */
 const params = new URLSearchParams(location.search);
 const car = params.get('car');
 
 if(!car){
-
-document.body.innerText = '錯誤：沒有車號';
-
+  document.body.innerText = '錯誤：沒有車號';
 }else{
 
-const LIFF_URL = 'https://liff.line.me/2008915809-vp9PFMVX';
+  /* ⭐ 存 localStorage（超關鍵） */
+  localStorage.setItem('car', car);
 
-location.replace(
-LIFF_URL +
-'?car=' + encodeURIComponent(car) +
-'#car=' + encodeURIComponent(car)
-);
+  const LIFF_URL = 'https://liff.line.me/2008915809-vp9PFMVX';
+
+  /* ⭐ 三重保險 */
+  location.replace(
+    LIFF_URL +
+    '?car=' + encodeURIComponent(car) +
+    '#car=' + encodeURIComponent(car)
+  );
 
 }
 
