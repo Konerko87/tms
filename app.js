@@ -3,7 +3,6 @@ const LIFF_ID = '2008915809-vp9PFMVX';
 const GAS_API_URL =
 'https://script.google.com/macros/s/AKfycbzTy3tN4O_cSQCz2f2Yp8ypCmmOvttJN6OJQOU02TP1-s3_RbXfOUL6oCrmC2XJcOH5/exec';
 
-
 let currentCar='';
 let currentLineId='';
 let currentDriverName='';
@@ -11,7 +10,6 @@ let selectedType='';
 
 let routesData=[];
 let areasData=[];
-
 
 const carText=document.getElementById('carText');
 const driverNameText=document.getElementById('driverNameText');
@@ -45,9 +43,8 @@ const maintBtn=document.getElementById('maintBtn');
 const inspectBtn=document.getElementById('inspectBtn');
 const closeVehicleModalBtn=document.getElementById('closeVehicleModalBtn');
 
-
 /***********************
-⭐ 強制補抓 car（解 LINE / iOS 掉參數）
+⭐ 強制補抓 car（最強版）
 ***********************/
 (function(){
 
@@ -71,8 +68,9 @@ c = decodeURIComponent(c);
 
 c = c.trim().toUpperCase();
 
-/* ⭐ 提前寫入 */
+/* ⭐ 雙寫入 */
 localStorage.setItem('car', c);
+sessionStorage.setItem('car', c);
 
 console.log('強制寫入car:', c);
 
@@ -83,7 +81,6 @@ console.warn('car parse error', e);
 }
 
 })();
-
 
 /***********************
 UI helpers
@@ -101,17 +98,8 @@ function hideLoading(){
 loadingMask.classList.add('hidden');
 }
 
-function openVehicleModal(){
-vehicleModal.classList.remove('hidden');
-}
-
-function closeVehicleModal(){
-vehicleModal.classList.add('hidden');
-}
-
-
 /***********************
-車號取得（Android強化）
+車號取得（最終穩定）
 ***********************/
 function getCar(){
 
@@ -124,19 +112,30 @@ car=url.searchParams.get('car');
 
 /* 2 hash */
 if(!car){
-
 const hash=window.location.hash;
-
 if(hash && hash.includes('car=')){
 const params=new URLSearchParams(hash.replace('#',''));
 car=params.get('car');
 }
-
 }
 
-/* 3 localStorage */
+/* 3 sessionStorage */
+if(!car){
+car=sessionStorage.getItem('car');
+}
+
+/* 4 localStorage */
 if(!car){
 car=localStorage.getItem('car');
+}
+
+/* 5 regex */
+if(!car){
+const full = window.location.href;
+const match = full.match(/car=([^&#]+)/);
+if(match){
+car = match[1];
+}
 }
 
 if(car){
@@ -146,7 +145,10 @@ car = decodeURIComponent(car);
 }catch(e){}
 
 car=car.trim().toUpperCase();
+
+/* ⭐ 再寫一次確保同步 */
 localStorage.setItem('car',car);
+sessionStorage.setItem('car',car);
 
 }
 
@@ -154,9 +156,8 @@ return car||'';
 
 }
 
-
 /***********************
-API
+API（防卡死）
 ***********************/
 async function api(action,payload={}){
 
@@ -167,137 +168,78 @@ encodeURIComponent(action)+
 '&'+
 new URLSearchParams(payload).toString();
 
-const res=await fetch(url);
+const controller = new AbortController();
+const timeout = setTimeout(()=>controller.abort(),8000);
+
+try{
+
+const res=await fetch(url,{signal:controller.signal});
 const text=await res.text();
 
-console.log('API response:',text);
+console.log('API:',text);
 
 return JSON.parse(text);
 
+}catch(e){
+
+console.error('API錯誤',e);
+return {ok:false};
+
+}finally{
+clearTimeout(timeout);
 }
 
+}
 
 /***********************
-路線 / 區域
-***********************/
-function renderRoutesByType(type){
-
-routeSelect.innerHTML='<option value="">請選擇路線</option>';
-
-let list=[];
-
-if(type==='爆量專車'){
-list=routesData.filter(r=>{
-const t=String(r.type||'').trim();
-return t==='爆量專車'||t==='文流';
-});
-}else{
-list=routesData.filter(r=>{
-return String(r.type||'').trim()===type;
-});
-}
-
-list.forEach(r=>{
-const opt=document.createElement('option');
-opt.value=r.name;
-opt.textContent=r.name;
-routeSelect.appendChild(opt);
-});
-
-}
-
-
-function renderAreas(){
-
-areaSelect.innerHTML='<option value="">請選擇區域</option>';
-
-areasData.forEach(area=>{
-const opt=document.createElement('option');
-opt.value=area;
-opt.textContent=area;
-areaSelect.appendChild(opt);
-});
-
-}
-
-
-/***********************
-任務按鈕
-***********************/
-document.querySelectorAll('.task-btn').forEach(btn=>{
-
-btn.onclick=()=>{
-
-document
-.querySelectorAll('.task-btn')
-.forEach(b=>b.classList.remove('selected-task'));
-
-btn.classList.add('selected-task');
-
-selectedType=btn.dataset.type||'';
-
-routeBlock.classList.add('hidden');
-areaBlock.classList.add('hidden');
-noteArea.classList.add('hidden');
-
-if(selectedType==='專車'){
-noteArea.classList.remove('hidden');
-return;
-}
-
-if(selectedType==='區域司機'){
-areaBlock.classList.remove('hidden');
-renderAreas();
-return;
-}
-
-routeBlock.classList.remove('hidden');
-renderRoutesByType(selectedType);
-
-};
-
-});
-
-
-/***********************
-初始化
+初始化（重點修正）
 ***********************/
 async function init(){
 
 try{
 
-showLoading('登入中...');
+showLoading('初始化中...');
 
+/* ⭐ 一定先抓 car */
 currentCar=getCar();
 
 if(!currentCar){
-carText.textContent='沒有取得車號';
+carText.textContent='❌ 沒有取得車號';
 hideLoading();
 return;
 }
 
 carText.textContent=currentCar;
 
+/* ⭐ LIFF init */
 await liff.init({liffId:LIFF_ID});
 
+/* ⭐ login（不能用 href） */
 if(!liff.isLoggedIn()){
-liff.login({
-redirectUri: window.location.href  // ⭐ 修正
-});
+
+const redirectUrl =
+window.location.origin +
+window.location.pathname +
+window.location.search +
+window.location.hash;
+
+liff.login({redirectUri:redirectUrl});
 return;
+
 }
 
-/* fallback */
+/* 取得 user */
 let profile;
 
 try{
 profile=await liff.getProfile();
 currentLineId=profile.userId;
-}catch(err){
+}catch(e){
 const idToken=liff.getDecodedIDToken();
 currentLineId=idToken.sub;
 }
 
+/* 讀資料 */
 showLoading('讀取資料...');
 
 const initResult=await api('initData',{lineId:currentLineId});
@@ -329,18 +271,19 @@ hideLoading();
 }catch(err){
 
 console.error(err);
-driverNameText.textContent='司機讀取失敗';
+driverNameText.textContent='初始化失敗';
 hideLoading();
 
 }
 
 }
 
-
 /***********************
 綁定司機
 ***********************/
 bindBtn.onclick=async()=>{
+
+try{
 
 const name=nameInput.value.trim();
 
@@ -349,7 +292,7 @@ setMsg('請輸入姓名');
 return;
 }
 
-showLoading('綁定司機...');
+showLoading('綁定中...');
 
 const result=await api('bindDriver',{
 lineId:currentLineId,
@@ -369,13 +312,19 @@ driverNameText.textContent=name;
 bindArea.classList.add('hidden');
 tripArea.classList.remove('hidden');
 
-};
+}catch(e){
+hideLoading();
+setMsg('錯誤');
+}
 
+};
 
 /***********************
 出車
 ***********************/
 tripBtn.onclick=async()=>{
+
+try{
 
 if(tripBtn.disabled)return;
 
@@ -439,49 +388,46 @@ await showVehicleStatus();
 
 hideLoading();
 
-};
+}catch(e){
+hideLoading();
+tripBtn.disabled=false;
+setMsg('系統錯誤');
+}
 
+};
 
 /***********************
 車輛狀態
 ***********************/
 async function showVehicleStatus(){
 
+try{
+
 const data=await api('getVehicleStatus',{car:currentCar});
 
 vehicleModalTitle.textContent='🚚 '+currentCar;
 
 vehicleModalContent.textContent=
-`保養提醒
-上次保養：${data.lastMaintainDate}
-下次保養：${data.maintainDueDate}
-剩餘：${data.maintRemain}天
+`保養：${data.maintRemain||'-'}天
+驗車：${data.inspectionRemain||'-'}天`;
 
-驗車提醒
-上次驗車：${data.lastInspectionDate}
-驗車期限：${data.inspectionDueDate}
-剩餘：${data.inspectionRemain}天`;
+vehicleModal.classList.remove('hidden');
 
-openVehicleModal();
+}catch(e){
+console.error(e);
+}
 
 }
 
-
 /***********************
-按鈕
+完成按鈕
 ***********************/
 maintBtn.onclick=async()=>{
 
 if(!confirm('確認已完成保養？'))return;
 
-showLoading('更新保養...');
-
 await api('completeMaintain',{car:currentCar});
-
-hideLoading();
-
 alert('保養完成');
-closeVehicleModal();
 
 };
 
@@ -489,20 +435,12 @@ inspectBtn.onclick=async()=>{
 
 if(!confirm('確認已完成驗車？'))return;
 
-showLoading('更新驗車...');
-
 await api('completeInspection',{car:currentCar});
-
-hideLoading();
-
 alert('驗車完成');
-closeVehicleModal();
 
 };
 
 closeVehicleModalBtn.onclick=()=>{
-
-closeVehicleModal();
 
 if(window.liff){
 liff.closeWindow();
@@ -511,7 +449,6 @@ window.close();
 }
 
 };
-
 
 /***********************
 Start
