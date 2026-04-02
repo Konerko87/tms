@@ -11,6 +11,17 @@ let selectedType = '';
 let routesData = [];
 let areasData = [];
 
+// Cookie 備援（LINE 瀏覽器可能清 sessionStorage）
+function setCarCookie(car) {
+  try { document.cookie = 'car=' + encodeURIComponent(car) + ';max-age=86400;path=/;SameSite=Lax'; } catch(e) {}
+}
+function getCarCookie() {
+  try {
+    const m = document.cookie.match(/(?:^|;\s*)car=([^;]*)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  } catch(e) { return ''; }
+}
+
 const carText = document.getElementById('carText');
 const driverNameText = document.getElementById('driverNameText');
 
@@ -143,6 +154,7 @@ function getCarFromLiffState() {
     if (car) {
       sessionStorage.setItem('car', car);
       localStorage.setItem('car', car);
+      setCarCookie(car);
       debugLog('preStore car =', car);
     } else {
       debugLog('preStore no car found');
@@ -192,6 +204,11 @@ function getCar() {
     // 5 localStorage
     if (!car) {
       car = localStorage.getItem('car');
+    }
+
+    // 6 cookie（LINE 瀏覽器備援）
+    if (!car) {
+      car = getCarCookie();
     }
 
     car = normalizeCar(car);
@@ -342,13 +359,16 @@ async function init() {
       if (currentCar) {
         sessionStorage.setItem('car', currentCar);
         localStorage.setItem('car', currentCar);
+      setCarCookie(currentCar);
       }
 
-      const redirectUrl =
-        window.location.origin +
-        window.location.pathname +
-        window.location.search +
-        window.location.hash;
+      // 確保 redirectUrl 一定帶有 car 參數（liff.init 可能改了 URL）
+      let redirectUrl = window.location.origin + window.location.pathname;
+      if (currentCar) {
+        redirectUrl += '?car=' + encodeURIComponent(currentCar);
+      } else {
+        redirectUrl += window.location.search;
+      }
 
       debugLog('not logged in, redirectUrl =', redirectUrl);
 
